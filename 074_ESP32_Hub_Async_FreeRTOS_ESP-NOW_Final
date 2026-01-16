@@ -1,0 +1,592 @@
+// ======================================================================
+// НАЗВАНИЕ: 077_ESP8266_Node_ESP-NOW_Final.ino
+// ВЕРСИЯ: 1.0 (Переделан для проекта с ESP-NOW)
+// УСТРОЙСТВО: ESP8266 (Node #1) с поддержкой ESP-NOW
+// ФУНКЦИЯ: Датчики + цепи → данные по HTTP, команды по ESP-NOW
+// ======================================================================
+
+#include <Wire.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+#include <WiFiClient.h>
+#include <ArduinoJson.h>
+#include <espnow.h>
+
+// ========== КОНФИГУРАЦИЯ УЗЛА #1 ==========
+#define NODE_ID 1                    // УНИКАЛЬНЫЙ ID
+#define SDA_PIN D2
+#define SCL_PIN D1
+#define AHT_ADDR 0x38
+#define BMP_ADDR 0x76
+
+// Цепи (ваши GPIO)
+#define CHAIN_1_PIN D5
+#define CHAIN_2_PIN D6
+#define CHAIN_3_PIN D7
+#define STATUS_LED_PIN LED_BUILTIN   // Встроенный LED
+
+// Реле/управление (назначьте нужные пины)
+#define RELAY_1_PIN D0
+#define RELAY_2_PIN D3
+#define LED_PIN D4                   // Внешний LED
+
+// Настройки сети
+const char* HUB_SSID = "ESP32_Hub_Network";
+const char* HUB_PASSWORD = "node12345678";
+const char* HUB_IP = "192.168.4.1";
+
+// MAC-адрес хаба (ЗАМЕНИТЕ НА ВАШ РЕАЛЬНЫЙ МАК ХАБА!)
+uint8_t hubMacAddress[] = {0x9C, 0x9C, 0x1F, 0xC7, 0x2D, 0x94};
+
+// ========== СТРУКТУРА ДАННЫХ ESP-NOW ==========
+typedef struct esp_now_message {
+    char command[16];
+    uint8_t sender_id;
+    uint8_t target_id;
+} esp_now_message;
+
+esp_now_message incomingMessage;
+esp_now_message outgoingMessage;
+
+// ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+bool ahtFound = false, bmpFound = false;
+bool hubConnected = false;
+bool alarmTriggered = false;
+bool espNowInitialized = false;
+
+// Данные датчиков
+float tempAHT = NAN, humAHT = NAN, tempBMP = NAN, pressBMP = NAN;
+
+// Состояние цепей и реле
+int chain1State = 0, chain2State = 0, chain3State = 0;
+int lastChain1 = 0, lastChain2 = 0, lastChain3 = 0;
+bool ledState = false;
+bool relay1State = false;
+bool relay2State = false;
+
+// Таймеры
+unsigned long lastSensorRead = 0;
+unsigned long lastHubSend = 0;
+unsigned long lastAlarmSend = 0;
+unsigned long lastSerialPrint = 0;
+unsigned long lastEspNowCheck = 0;
+
+const unsigned long SENSOR_READ_INTERVAL = 2000;
+const unsigned long HUB_SEND_INTERVAL = 10000;     // HTTP данные каждые 10 сек
+const unsigned long ALARM_COOLDOWN = 5000;
+const unsigned long RECONNECT_INTERVAL = 30000;
+const unsigned long SERIAL_PRINT_INTERVAL = 5000;
+const unsigned long ESPNOW_CHECK_INTERVAL = 60000;
+
+WiFiClient wifiClient;
+HTTPClient http;
+String lastReceivedCommand = "";
+
+// ========== ПРОТОТИПЫ ФУНКЦИЙ ==========
+void initSensors();
+void setupWiFi();
+void setupESP_NOW();
+void processCommand(String command);
+void sendAckToHub(const char* ackCommand);
+void readSensors();
+void readChains();
+void checkAlarmConditions(unsigned long now);
+void updateStatusLED();
+void sendToHub(bool isEmergency);
+void printToSerial();
+
+// Колбэки ESP-NOW
+void onEspNowDataRecv(uint8_t *mac, uint8_t *data, uint8_t len);
+void onEspNowDataSend(uint8_t *mac, uint8_t status);
+
+// ======================================================================
+// SETUP
+// ======================================================================
+void setup() {
+    Serial.begin(115200);
+    delay(2000);
+    
+    Serial.println("\n=== УЗЕЛ ESP8266 #1 (ESP-NOW версия) ===");
+    Serial.println("ID узла: " + String(NODE_ID));
+    
+    // Настройка пинов
+    pinMode(STATUS_LED_PIN, OUTPUT);
+    digitalWrite(STATUS_LED_PIN, HIGH); // LED выключен (активный LOW на ESP8266)
+    
+    pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, HIGH);
+    
+    pinMode(RELAY_1_PIN, OUTPUT);
+    digitalWrite(RELAY_1_PIN, LOW);
+    
+    pinMode(RELAY_2_PIN, OUTPUT);
+    digitalWrite(RELAY_2_PIN, LOW);
+    
+    pinMode(CHAIN_1_PIN, INPUT_PULLUP);
+    pinMode(CHAIN_2_PIN, INPUT_PULLUP);
+    pinMode(CHAIN_3_PIN, INPUT_PULLUP);
+    
+    // Инициализация I2C и датчиков
+    Wire.begin(SDA_PIN, SCL_PIN);
+    delay(100);
+    initSensors();
+    
+    // Подключение к Wi-Fi
+    setupWiFi();
+    
+    // Инициализация ESP-NOW
+    setupESP_NOW();
+    
+    Serial.println("\n✅ Узел #1 готов к работе");
+    Serial.println("Режим: Датчики → HTTP, Команды ← ESP-NOW");
+}
+
+// ======================================================================
+// ИНИЦИАЛИЗАЦИЯ ДАТЧИКОВ
+// ======================================================================
+void initSensors() {
+    Serial.println("Инициализация датчиков...");
+    
+    // Проверка AHT20
+    Wire.beginTransmission(AHT_ADDR);
+    ahtFound = (Wire.endTransmission() == 0);
+    Serial.print("AHT20: ");
+    Serial.println(ahtFound ? "OK (0x38)" : "НЕТ");
+    
+    // Проверка BMP280 (требует библиотеку, упрощаем)
+    Wire.beginTransmission(BMP_ADDR);
+    bmpFound = (Wire.endTransmission() == 0);
+    Serial.print("BMP280: ");
+    Serial.println(bmpFound ? "OK (0x76)" : "НЕТ");
+    
+    // Для BMP280 нужно установить библиотеку Adafruit_BMP280
+    // Если библиотеки нет - закомментируйте использование BMP280
+}
+
+// ======================================================================
+// НАСТРОЙКА WI-FI
+// ======================================================================
+void setupWiFi() {
+    Serial.print("Подключение к хабу '");
+    Serial.print(HUB_SSID);
+    Serial.print("'... ");
+    
+    WiFi.setOutputPower(10.5); // Уменьшаем мощность для снижения нагрева
+    WiFi.begin(HUB_SSID, HUB_PASSWORD);
+    
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 25) {
+        digitalWrite(STATUS_LED_PIN, (attempts % 2) ? HIGH : LOW);
+        delay(250);
+        Serial.print(".");
+        attempts++;
+    }
+    
+    hubConnected = (WiFi.status() == WL_CONNECTED);
+    
+    if (hubConnected) {
+        Serial.println(" УСПЕХ");
+        Serial.print("IP узла: ");
+        Serial.println(WiFi.localIP());
+        Serial.print("MAC узла: ");
+        Serial.println(WiFi.macAddress());
+        Serial.print("RSSI: ");
+        Serial.print(WiFi.RSSI());
+        Serial.println(" dBm");
+        digitalWrite(STATUS_LED_PIN, LOW);
+    } else {
+        Serial.println(" НЕ УДАЛОСЬ");
+        digitalWrite(STATUS_LED_PIN, HIGH);
+        Serial.println("Работаем только в режиме ESP-NOW");
+    }
+}
+
+// ======================================================================
+// НАСТРОЙКА ESP-NOW
+// ======================================================================
+void setupESP_NOW() {
+    Serial.print("Инициализация ESP-NOW... ");
+    
+    if (esp_now_init() != 0) {
+        Serial.println("❌ Ошибка инициализации!");
+        espNowInitialized = false;
+        return;
+    }
+    
+    esp_now_set_self_role(ESP_NOW_ROLE_COMBO);
+    esp_now_register_recv_cb(onEspNowDataRecv);
+    esp_now_register_send_cb(onEspNowDataSend);
+    
+    // Добавление хаба как пира
+    esp_now_add_peer(hubMacAddress, ESP_NOW_ROLE_COMBO, 1, NULL, 0);
+    
+    Serial.println("✅ Успешно");
+    Serial.print("Хаб MAC: ");
+    for(int i=0; i<6; i++) {
+        Serial.print(hubMacAddress[i], HEX);
+        if(i<5) Serial.print(":");
+    }
+    Serial.println();
+    espNowInitialized = true;
+}
+
+// ======================================================================
+// ОБРАБОТКА КОМАНД ОТ ХАБА
+// ======================================================================
+void processCommand(String command) {
+    Serial.print("🔧 Команда от хаба: ");
+    Serial.println(command);
+    
+    lastReceivedCommand = command;
+    
+    if (command == "LED_ON") {
+        digitalWrite(LED_PIN, LOW); // Активный LOW на ESP8266
+        ledState = true;
+        Serial.println("💡 LED ВКЛЮЧЁН");
+        sendAckToHub("ACK_ON");
+        
+    } else if (command == "LED_OFF") {
+        digitalWrite(LED_PIN, HIGH);
+        ledState = false;
+        Serial.println("💡 LED ВЫКЛЮЧЕН");
+        sendAckToHub("ACK_OFF");
+        
+    } else if (command == "RELAY_1_ON") {
+        digitalWrite(RELAY_1_PIN, HIGH);
+        relay1State = true;
+        Serial.println("🔌 РЕЛЕ 1 ВКЛЮЧЕНО");
+        sendAckToHub("ACK_RELAY1_ON");
+        
+    } else if (command == "RELAY_1_OFF") {
+        digitalWrite(RELAY_1_PIN, LOW);
+        relay1State = false;
+        Serial.println("🔌 РЕЛЕ 1 ВЫКЛЮЧЕНО");
+        sendAckToHub("ACK_RELAY1_OFF");
+        
+    } else if (command == "RELAY_2_ON") {
+        digitalWrite(RELAY_2_PIN, HIGH);
+        relay2State = true;
+        Serial.println("🔌 РЕЛЕ 2 ВКЛЮЧЕНО");
+        sendAckToHub("ACK_RELAY2_ON");
+        
+    } else if (command == "RELAY_2_OFF") {
+        digitalWrite(RELAY_2_PIN, LOW);
+        relay2State = false;
+        Serial.println("🔌 РЕЛЕ 2 ВЫКЛЮЧЕНО");
+        sendAckToHub("ACK_RELAY2_OFF");
+        
+    } else if (command == "GET_STATUS") {
+        sendAckToHub("STATUS_OK");
+        
+    } else {
+        Serial.print("❌ Неизвестная команда: ");
+        Serial.println(command);
+    }
+}
+
+// ======================================================================
+// ОТПРАВКА ПОДТВЕРЖДЕНИЯ ХАБУ
+// ======================================================================
+void sendAckToHub(const char* ackCommand) {
+    if (!espNowInitialized) {
+        Serial.println("⚠️ ESP-NOW не инициализирован");
+        return;
+    }
+    
+    strncpy(outgoingMessage.command, ackCommand, sizeof(outgoingMessage.command)-1);
+    outgoingMessage.sender_id = NODE_ID;
+    outgoingMessage.target_id = 0;
+    
+    uint8_t result = esp_now_send(hubMacAddress, (uint8_t *) &outgoingMessage, sizeof(outgoingMessage));
+    
+    Serial.print("📤 Подтверждение '");
+    Serial.print(ackCommand);
+    Serial.print("': ");
+    Serial.println(result == 0 ? "OK" : "ERROR");
+}
+
+// ======================================================================
+// КОЛБЭКИ ESP-NOW
+// ======================================================================
+void onEspNowDataRecv(uint8_t *mac, uint8_t *data, uint8_t len) {
+    memcpy(&incomingMessage, data, min(len, (uint8_t)sizeof(incomingMessage)));
+    
+    Serial.print("📥 ESP-NOW от ");
+    for(int i=0; i<6; i++) {
+        Serial.print(mac[i], HEX);
+        if(i<5) Serial.print(":");
+    }
+    Serial.print(": ");
+    Serial.print(incomingMessage.command);
+    Serial.print(" (цель: ");
+    Serial.print(incomingMessage.target_id);
+    Serial.println(")");
+    
+    // Проверяем, предназначена ли команда этому узлу
+    if (incomingMessage.target_id == 0 || incomingMessage.target_id == NODE_ID) {
+        processCommand(String(incomingMessage.command));
+    }
+}
+
+void onEspNowDataSend(uint8_t *mac, uint8_t status) {
+    if (status != 0) {
+        Serial.println("⚠️ Подтверждение не доставлено");
+    }
+}
+
+// ======================================================================
+// ЧТЕНИЕ ДАТЧИКОВ
+// ======================================================================
+void readSensors() {
+    tempAHT = NAN; humAHT = NAN; tempBMP = NAN; pressBMP = NAN;
+    
+    // Чтение AHT20 (аппаратное)
+    if (ahtFound) {
+        Wire.beginTransmission(AHT_ADDR);
+        Wire.write(0xAC);
+        Wire.write(0x33);
+        Wire.write(0x00);
+        Wire.endTransmission();
+        delay(75);
+        
+        Wire.requestFrom(AHT_ADDR, 6);
+        if (Wire.available() == 6) {
+            uint8_t data[6];
+            for (int i = 0; i < 6; i++) data[i] = Wire.read();
+            
+            if ((data[0] & 0x80) == 0) {
+                uint32_t rawHum = ((data[1] << 16) | (data[2] << 8) | data[3]) >> 4;
+                uint32_t rawTemp = ((data[3] & 0x0F) << 16) | (data[4] << 8) | data[5];
+                
+                humAHT = (rawHum * 100.0) / 1048576.0;
+                tempAHT = (rawTemp * 200.0) / 1048576.0 - 50.0;
+            }
+        }
+    }
+    
+    // Для BMP280 нужна библиотека - здесь заглушка
+    if (bmpFound) {
+        // Если установлена библиотека Adafruit_BMP280, раскомментируйте:
+        // tempBMP = bmp.readTemperature();
+        // pressBMP = bmp.readPressure() / 133.322;
+        
+        // Заглушка для теста
+        tempBMP = 22.5 + (random(-50, 51) / 100.0);
+        pressBMP = 730.0 + (random(-20, 21) / 10.0);
+    }
+}
+
+// ======================================================================
+// ЧТЕНИЕ ЦЕПЕЙ
+// ======================================================================
+void readChains() {
+    lastChain1 = chain1State;
+    lastChain2 = chain2State;
+    lastChain3 = chain3State;
+    
+    chain1State = digitalRead(CHAIN_1_PIN);
+    chain2State = digitalRead(CHAIN_2_PIN);
+    chain3State = digitalRead(CHAIN_3_PIN);
+}
+
+// ======================================================================
+// ПРОВЕРКА АВАРИЙНЫХ УСЛОВИЙ
+// ======================================================================
+void checkAlarmConditions(unsigned long now) {
+    if (chain1State != lastChain1 || chain2State != lastChain2 || chain3State != lastChain3) {
+        alarmTriggered = true;
+        Serial.print("🚨 ИЗМЕНЕНИЕ ЦЕПЕЙ: [");
+        Serial.print(chain1State);
+        Serial.print(",");
+        Serial.print(chain2State);
+        Serial.print(",");
+        Serial.print(chain3State);
+        Serial.println("]");
+    }
+    
+    static float lastTemp = NAN;
+    if (!isnan(tempAHT) && !isnan(lastTemp)) {
+        if (abs(tempAHT - lastTemp) > 5.0) {
+            alarmTriggered = true;
+            Serial.print("🚨 СКАЧОК ТЕМПЕРАТУРЫ: ");
+            Serial.print(lastTemp, 1);
+            Serial.print(" -> ");
+            Serial.print(tempAHT, 1);
+            Serial.println(" °C");
+        }
+    }
+    lastTemp = tempAHT;
+}
+
+// ======================================================================
+// ОТПРАВКА ДАННЫХ НА ХАБ ПО HTTP
+// ======================================================================
+void sendToHub(bool isEmergency) {
+    if (!hubConnected) return;
+    
+    String url = "http://" + String(HUB_IP) + (isEmergency ? "/emergency" : "/data");
+    http.begin(wifiClient, url);
+    http.addHeader("Content-Type", "application/json");
+    
+    JsonDocument jsonDoc;
+    jsonDoc["nodeId"] = NODE_ID;
+    
+    if (!isnan(tempAHT)) jsonDoc["tempAHT"] = round(tempAHT * 10) / 10.0;
+    if (!isnan(humAHT)) jsonDoc["humAHT"] = round(humAHT * 10) / 10.0;
+    if (!isnan(tempBMP)) jsonDoc["tempBMP"] = round(tempBMP * 10) / 10.0;
+    if (!isnan(pressBMP)) jsonDoc["pressBMP"] = round(pressBMP * 10) / 10.0;
+    
+    jsonDoc["chain1"] = chain1State;
+    jsonDoc["chain2"] = chain2State;
+    jsonDoc["chain3"] = chain3State;
+    jsonDoc["rssi"] = WiFi.RSSI();
+    jsonDoc["heap"] = ESP.getFreeHeap();
+    
+    String jsonString;
+    serializeJson(jsonDoc, jsonString);
+    
+    int httpCode = http.POST(jsonString);
+    
+    if (httpCode > 0) {
+        if (httpCode == 200) {
+            Serial.print(isEmergency ? "🚨 АВАРИЙНЫЕ " : "📊 ДАННЫЕ ");
+            Serial.println("отправлены на хаб");
+        }
+    } else {
+        Serial.print("❌ Ошибка HTTP: ");
+        Serial.println(http.errorToString(httpCode));
+        hubConnected = false;
+    }
+    
+    http.end();
+}
+
+// ======================================================================
+// ОБНОВЛЕНИЕ СТАТУСА LED
+// ======================================================================
+void updateStatusLED() {
+    static unsigned long lastLEDUpdate = 0;
+    static bool ledBlinkState = HIGH;
+    unsigned long now = millis();
+    
+    if (hubConnected && espNowInitialized) {
+        digitalWrite(STATUS_LED_PIN, LOW); // Постоянно горит при полной связи
+    } else if (hubConnected && !espNowInitialized) {
+        // Мигает 1 раз в секунду если только Wi-Fi
+        if (now - lastLEDUpdate > 1000) {
+            ledBlinkState = !ledBlinkState;
+            digitalWrite(STATUS_LED_PIN, ledBlinkState);
+            lastLEDUpdate = now;
+        }
+    } else {
+        // Быстро мигает при потере связи
+        if (now - lastLEDUpdate > 250) {
+            ledBlinkState = !ledBlinkState;
+            digitalWrite(STATUS_LED_PIN, ledBlinkState);
+            lastLEDUpdate = now;
+        }
+    }
+}
+
+// ======================================================================
+// ВЫВОД В SERIAL
+// ======================================================================
+void printToSerial() {
+    Serial.print("[Узел ");
+    Serial.print(NODE_ID);
+    Serial.print("] ");
+    Serial.print(hubConnected ? "Wi-Fi ✓" : "Wi-Fi ✗");
+    Serial.print(" | ");
+    Serial.print(espNowInitialized ? "ESP-NOW ✓" : "ESP-NOW ✗");
+    
+    if (ahtFound && !isnan(tempAHT)) {
+        Serial.print(" | AHT: ");
+        Serial.print(tempAHT, 1);
+        Serial.print("°C ");
+        Serial.print(humAHT, 1);
+        Serial.print("%");
+    }
+    
+    if (bmpFound && !isnan(tempBMP)) {
+        Serial.print(" | BMP: ");
+        Serial.print(tempBMP, 1);
+        Serial.print("°C ");
+        Serial.print(pressBMP, 1);
+        Serial.print("mmHg");
+    }
+    
+    Serial.print(" | Цепи: [");
+    Serial.print(chain1State ? "1-ОБРЫВ" : "1-НОРМА");
+    Serial.print(",");
+    Serial.print(chain2State ? "2-ОБРЫВ" : "2-НОРМА");
+    Serial.print(",");
+    Serial.print(chain3State ? "3-ОБРЫВ" : "3-НОРМА");
+    Serial.print("]");
+    
+    Serial.print(" | LED: ");
+    Serial.print(ledState ? "ON" : "OFF");
+    Serial.print(" | Реле: [");
+    Serial.print(relay1State ? "1-ON" : "1-OFF");
+    Serial.print(",");
+    Serial.print(relay2State ? "2-ON" : "2-OFF");
+    Serial.print("]");
+    
+    if (hubConnected) {
+        Serial.print(" | RSSI: ");
+        Serial.print(WiFi.RSSI());
+        Serial.print("dBm");
+    }
+    
+    if (lastReceivedCommand != "") {
+        Serial.print(" | Команда: ");
+        Serial.print(lastReceivedCommand);
+    }
+    
+    Serial.println();
+}
+
+// ======================================================================
+// LOOP
+// ======================================================================
+void loop() {
+    unsigned long now = millis();
+    
+    // 1. Чтение датчиков и цепей
+    if (now - lastSensorRead >= SENSOR_READ_INTERVAL) {
+        readSensors();
+        readChains();
+        checkAlarmConditions(now);
+        lastSensorRead = now;
+    }
+    
+    // 2. Вывод в Serial
+    if (now - lastSerialPrint >= SERIAL_PRINT_INTERVAL) {
+        printToSerial();
+        lastSerialPrint = now;
+    }
+    
+    // 3. Обновление статуса LED
+    updateStatusLED();
+    
+    // 4. Отправка данных на хаб по HTTP (если Wi-Fi подключен)
+    if (hubConnected && now - lastHubSend >= HUB_SEND_INTERVAL) {
+        sendToHub(false);
+        lastHubSend = now;
+    }
+    
+    // 5. Отправка аварийных данных
+    if (alarmTriggered && hubConnected && (now - lastAlarmSend >= ALARM_COOLDOWN)) {
+        sendToHub(true);
+        alarmTriggered = false;
+        lastAlarmSend = now;
+    }
+    
+    // 6. Переподключение к Wi-Fi
+    if (!hubConnected && now - lastHubSend >= RECONNECT_INTERVAL) {
+        Serial.println("♻️ Переподключение к Wi-Fi...");
+        setupWiFi();
+        lastHubSend = now;
+    }
+    
+    delay(100);
+}
