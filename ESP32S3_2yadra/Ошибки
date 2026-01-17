@@ -1,14 +1,117 @@
-In file included from H:/RADIO/MK/Progi/FLProg/downloads/PortableFLProg_8-1-0_Win64/ideV8/portable/packages/esp32/tools/esp-rv32/2511/riscv32-esp-elf/include/c++/14.2.0/stdlib.h:36,
-                 from H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-9bb7aa84-v2\esp32c3/include/newlib/platform_include/assert.h:12,
-                 from H:/RADIO/MK/Progi/FLProg/downloads/PortableFLProg_8-1-0_Win64/ideV8/portable/packages/esp32/tools/esp-rv32/2511/riscv32-esp-elf/include/sys/reent.h:458,
-                 from H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-9bb7aa84-v2\esp32c3/include/newlib/platform_include/sys/reent.h:15,
-                 from H:/RADIO/MK/Progi/FLProg/downloads/PortableFLProg_8-1-0_Win64/ideV8/portable/packages/esp32/tools/esp-rv32/2511/riscv32-esp-elf/include/stdio.h:60,
-                 from H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-9bb7aa84-v2\esp32c3/include/newlib/platform_include/stdio.h:10,
-                 from H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\hardware\esp32\3.3.5\cores\esp32/Arduino.h:27,
-                 from C:\Users\sasa\AppData\Local\Temp\arduino_build_924358\sketch\sketch_jan18a.ino.cpp:1:
-H:/RADIO/MK/Progi/FLProg/downloads/PortableFLProg_8-1-0_Win64/ideV8/portable/packages/esp32/tools/esp-rv32/2511/riscv32-esp-elf/include/c++/14.2.0/cstdlib:41:10: fatal error: bits/c++config.h: No such file or directory
-   41 | #include <bits/c++config.h>
-      |          ^~~~~~~~~~~~~~~~~~
-compilation terminated.
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\ESP32S3_2yadra\sketch_jan17b\sketch_jan17b.ino: In function 'void setupESP_NOW()':
+sketch_jan17b:522:30: error: invalid conversion from 'void (*)(const uint8_t*, esp_now_send_status_t)' {aka 'void (*)(const unsigned char*, esp_now_send_status_t)'} to 'esp_now_send_cb_t' {aka 'void (*)(const wifi_tx_info_t*, esp_now_send_status_t)'} [-fpermissive]
+In file included from H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\ESP32S3_2yadra\sketch_jan17b\sketch_jan17b.ino:10:
+H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-9bb7aa84-v2\esp32s3/include/esp_wifi/include/esp_now.h:193:54: note:   initializing argument 1 of 'esp_err_t esp_now_register_send_cb(esp_now_send_cb_t)'
+  193 | esp_err_t esp_now_register_send_cb(esp_now_send_cb_t cb);
+      |                                    ~~~~~~~~~~~~~~~~~~^~
+sketch_jan17b:523:30: error: invalid conversion from 'void (*)(const uint8_t*, const uint8_t*, int)' {aka 'void (*)(const unsigned char*, const unsigned char*, int)'} to 'esp_now_recv_cb_t' {aka 'void (*)(const esp_now_recv_info*, const unsigned char*, int)'} [-fpermissive]
+H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-9bb7aa84-v2\esp32s3/include/esp_wifi/include/esp_now.h:172:54: note:   initializing argument 1 of 'esp_err_t esp_now_register_recv_cb(esp_now_recv_cb_t)'
+  172 | esp_err_t esp_now_register_recv_cb(esp_now_recv_cb_t cb);
+      |                                    ~~~~~~~~~~~~~~~~~~^~
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\ESP32S3_2yadra\sketch_jan17b\sketch_jan17b.ino: In lambda function:
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\ESP32S3_2yadra\sketch_jan17b\sketch_jan17b.ino:593:24: warning: 'void AsyncWebServerRequest::send_P(int, const String&, const char*, AwsTemplateProcessor)' is deprecated: Replaced by send(int code, const String& contentType, const char* content = asyncsrv::empty, AwsTemplateProcessor callback = nullptr) [-Wdeprecated-declarations]
+In file included from H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\ESP32S3_2yadra\sketch_jan17b\sketch_jan17b.ino:12:
+H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\ESPAsyncWebServer\src/ESPAsyncWebServer.h:350:10: note: declared here
+  350 |     void send_P(int code, const String& contentType, PGM_P content, AwsTemplateProcessor callback = nullptr) {
+      |          ^~~~~~
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\ESP32S3_2yadra\sketch_jan17b\sketch_jan17b.ino: In function 'void onWebSocketEvent(AsyncWebSocket*, AsyncWebSocketClient*, AwsEventType, void*, uint8_t*, size_t)':
+sketch_jan17b:701:30: error: 'ArduinoJson::V6215PB2::JsonDocument::JsonDocument()' is protected within this context
+In file included from C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/BasicJsonDocument.hpp:7,
+                 from C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/DynamicJsonDocument.hpp:7,
+                 from C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson.hpp:33,
+                 from C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson.h:9,
+                 from H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\ESP32S3_2yadra\sketch_jan17b\sketch_jan17b.ino:13:
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:280:3: note: declared protected here
+  280 |   JsonDocument() : pool_(0, 0) {}
+      |   ^~~~~~~~~~~~
+sketch_jan17b:701:30: error: 'ArduinoJson::V6215PB2::JsonDocument::~JsonDocument()' is protected within this context
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:286:3: note: declared protected here
+  286 |   ~JsonDocument() {}
+      |   ^
+sketch_jan17b:742:46: error: 'ArduinoJson::V6215PB2::JsonDocument::JsonDocument()' is protected within this context
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:280:3: note: declared protected here
+  280 |   JsonDocument() : pool_(0, 0) {}
+      |   ^~~~~~~~~~~~
+sketch_jan17b:742:46: error: 'ArduinoJson::V6215PB2::JsonDocument::~JsonDocument()' is protected within this context
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:286:3: note: declared protected here
+  286 |   ~JsonDocument() {}
+      |   ^
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\ESP32S3_2yadra\sketch_jan17b\sketch_jan17b.ino:683:12: warning: enumeration value 'WS_EVT_PING' not handled in switch [-Wswitch]
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\ESP32S3_2yadra\sketch_jan17b\sketch_jan17b.ino: In function 'void checkNodeTimeouts()':
+sketch_jan17b:877:30: error: 'ArduinoJson::V6215PB2::JsonDocument::JsonDocument()' is protected within this context
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:280:3: note: declared protected here
+  280 |   JsonDocument() : pool_(0, 0) {}
+      |   ^~~~~~~~~~~~
+sketch_jan17b:877:30: error: 'ArduinoJson::V6215PB2::JsonDocument::~JsonDocument()' is protected within this context
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:286:3: note: declared protected here
+  286 |   ~JsonDocument() {}
+      |   ^
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\ESP32S3_2yadra\sketch_jan17b\sketch_jan17b.ino: In function 'void sendWebSocketUpdate(int)':
+sketch_jan17b:929:18: error: 'ArduinoJson::V6215PB2::JsonDocument::JsonDocument()' is protected within this context
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:280:3: note: declared protected here
+  280 |   JsonDocument() : pool_(0, 0) {}
+      |   ^~~~~~~~~~~~
+sketch_jan17b:929:18: error: 'ArduinoJson::V6215PB2::JsonDocument::~JsonDocument()' is protected within this context
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:286:3: note: declared protected here
+  286 |   ~JsonDocument() {}
+      |   ^
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\ESP32S3_2yadra\sketch_jan17b\sketch_jan17b.ino: In function 'void broadcastSystemStatus()':
+sketch_jan17b:952:18: error: 'ArduinoJson::V6215PB2::JsonDocument::JsonDocument()' is protected within this context
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:280:3: note: declared protected here
+  280 |   JsonDocument() : pool_(0, 0) {}
+      |   ^~~~~~~~~~~~
+sketch_jan17b:952:18: error: 'ArduinoJson::V6215PB2::JsonDocument::~JsonDocument()' is protected within this context
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:286:3: note: declared protected here
+  286 |   ~JsonDocument() {}
+      |   ^
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\ESP32S3_2yadra\sketch_jan17b\sketch_jan17b.ino: In function 'String getNodesJSON()':
+sketch_jan17b:975:18: error: 'ArduinoJson::V6215PB2::JsonDocument::JsonDocument()' is protected within this context
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:280:3: note: declared protected here
+  280 |   JsonDocument() : pool_(0, 0) {}
+      |   ^~~~~~~~~~~~
+sketch_jan17b:975:18: error: 'ArduinoJson::V6215PB2::JsonDocument::~JsonDocument()' is protected within this context
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:286:3: note: declared protected here
+  286 |   ~JsonDocument() {}
+      |   ^
+sketch_jan17b:981:56: error: no matching function for call to 'ArduinoJson::V6215PB2::JsonArray::add<ArduinoJson::V6215PB2::JsonObject>()'
+In file included from C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson.hpp:29:
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Array/JsonArray.hpp:54:21: note: candidate: 'template<class T> bool ArduinoJson::V6215PB2::JsonArray::add(const T&) const'
+   54 |   FORCE_INLINE bool add(const T& value) const {
+      |                     ^~~
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Array/JsonArray.hpp:54:21: note:   candidate expects 1 argument, 0 provided
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Array/JsonArray.hpp:61:21: note: candidate: 'template<class T> bool ArduinoJson::V6215PB2::JsonArray::add(T*) const'
+   61 |   FORCE_INLINE bool add(T* value) const {
+      |                     ^~~
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Array/JsonArray.hpp:61:21: note:   candidate expects 1 argument, 0 provided
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\ESP32S3_2yadra\sketch_jan17b\sketch_jan17b.ino:981:56: note: some candidates omitted; use '-fdiagnostics-all-candidates' to display them
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\ESP32S3_2yadra\sketch_jan17b\sketch_jan17b.ino: In function 'String getNodeJSON(int)':
+sketch_jan17b:1005:18: error: 'ArduinoJson::V6215PB2::JsonDocument::JsonDocument()' is protected within this context
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:280:3: note: declared protected here
+  280 |   JsonDocument() : pool_(0, 0) {}
+      |   ^~~~~~~~~~~~
+sketch_jan17b:1005:18: error: 'ArduinoJson::V6215PB2::JsonDocument::~JsonDocument()' is protected within this context
+C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:286:3: note: declared protected here
+  286 |   ~JsonDocument() {}
+      |   ^
+Несколько библиотек найдено для "AsyncTCP.h"
+ Используется: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\AsyncTCP
+Не используется: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\Async_TCP
+Не используется: C:\Users\sasa\Documents\Arduino\libraries\Async_TCP
+Несколько библиотек найдено для "ESPAsyncWebServer.h"
+ Используется: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\ESPAsyncWebServer
+Не используется: C:\Users\sasa\Documents\Arduino\libraries\ESP_Async_WebServer
+Несколько библиотек найдено для "ArduinoJson.h"
+ Используется: C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson
+Не используется: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\ArduinoJson
+Несколько библиотек найдено для "WiFi.h"
+ Используется: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\hardware\esp32\3.3.5\libraries\WiFi
+Не используется: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\WiFi
+Используем библиотеку WiFi версии 3.3.5 из папки: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\hardware\esp32\3.3.5\libraries\WiFi 
+Используем библиотеку Network версии 3.3.5 из папки: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\hardware\esp32\3.3.5\libraries\Network 
+Используем библиотеку AsyncTCP версии 3.3.2 из папки: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\AsyncTCP 
+Используем библиотеку ESPAsyncWebServer версии 3.6.0 из папки: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\ESPAsyncWebServer 
+Используем библиотеку FS версии 3.3.5 из папки: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\hardware\esp32\3.3.5\libraries\FS 
+Используем библиотеку ArduinoJson версии 6.21.5 из папки: C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson 
+Используем библиотеку Hash версии 3.3.5 из папки: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\hardware\esp32\3.3.5\libraries\Hash 
 exit status 1
-Ошибка компиляции для платы ESP32C3 Dev Module.
+invalid conversion from 'void (*)(const uint8_t*, esp_now_send_status_t)' {aka 'void (*)(const unsigned char*, esp_now_send_status_t)'} to 'esp_now_send_cb_t' {aka 'void (*)(const wifi_tx_info_t*, esp_now_send_status_t)'} [-fpermissive]
