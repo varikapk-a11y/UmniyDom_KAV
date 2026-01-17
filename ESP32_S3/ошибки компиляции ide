@@ -1,91 +1,61 @@
-Компиляция скетча...
-"C:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp-x32\\2511/bin/xtensa-esp32s3-elf-g++" -MMD -c "@C:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-arduino-libs\\idf-release_v5.5-9bb7aa84-v2\\esp32s3/flags/cpp_flags" -Os -Werror=return-type -DF_CPU=240000000L -DARDUINO=10607 -DARDUINO_ESP32S3_DEV -DARDUINO_ARCH_ESP32 "-DARDUINO_BOARD=\"ESP32S3_DEV\"" "-DARDUINO_VARIANT=\"esp32s3\"" -DARDUINO_PARTITION_default "-DARDUINO_HOST_OS=\"windows\"" "-DARDUINO_FQBN=\"esp32:esp32:esp32s3:UploadSpeed=921600,USBMode=hwcdc,CDCOnBoot=default,MSCOnBoot=default,DFUOnBoot=default,UploadMode=default,CPUFreq=240,FlashMode=qio,FlashSize=4M,PartitionScheme=default,DebugLevel=none,PSRAM=disabled,LoopCore=1,EventsCore=1,EraseFlash=none,JTAGAdapter=default,ZigbeeMode=default\"" -DESP32=ESP32 -DCORE_DEBUG_LEVEL=0 -DARDUINO_RUNNING_CORE=1 -DARDUINO_EVENT_RUNNING_CORE=1 -DARDUINO_USB_MODE=1 -DARDUINO_USB_CDC_ON_BOOT=0 -DARDUINO_USB_MSC_ON_BOOT=0 -DARDUINO_USB_DFU_ON_BOOT=0 "@C:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-arduino-libs\\idf-release_v5.5-9bb7aa84-v2\\esp32s3/flags/defines" "-IC:\\Users\\sasa\\AppData\\Local\\Temp\\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\\sketch_jan17a" -iprefix "C:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-arduino-libs\\idf-release_v5.5-9bb7aa84-v2\\esp32s3/include/" "@C:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-arduino-libs\\idf-release_v5.5-9bb7aa84-v2\\esp32s3/flags/includes" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-arduino-libs\\idf-release_v5.5-9bb7aa84-v2\\esp32s3/qio_qspi/include" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.5\\cores\\esp32" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.5\\variants\\esp32s3" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.5\\libraries\\WiFi\\src" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.5\\libraries\\Network\\src" "-Ic:\\Users\\sasa\\Documents\\Arduino\\libraries\\ESP_Async_WebServer\\src" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.5\\libraries\\FS\\src" "-Ic:\\Users\\sasa\\Documents\\Arduino\\libraries\\Async_TCP\\src" "-Ic:\\Users\\sasa\\Documents\\Arduino\\libraries\\WebSockets\\src" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.5\\libraries\\NetworkClientSecure\\src" "-Ic:\\Users\\sasa\\Documents\\Arduino\\libraries\\ArduinoJson\\src" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.5\\libraries\\SPIFFS\\src" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.5\\libraries\\Hash\\src" "@C:\\Users\\sasa\\AppData\\Local\\arduino\\sketches\\695B8E04EDD7A624666DD4677A68DEF4/build_opt.h" "@C:\\Users\\sasa\\AppData\\Local\\arduino\\sketches\\695B8E04EDD7A624666DD4677A68DEF4/file_opts" "C:\\Users\\sasa\\AppData\\Local\\arduino\\sketches\\695B8E04EDD7A624666DD4677A68DEF4\\sketch\\sketch_jan17a.ino.cpp" -o "C:\\Users\\sasa\\AppData\\Local\\arduino\\sketches\\695B8E04EDD7A624666DD4677A68DEF4\\sketch\\sketch_jan17a.ino.cpp.o"
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino: In lambda function:
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino:108:5: warning: 'template<unsigned int N> class ArduinoJson::V742PB22::StaticJsonDocument' is deprecated: use JsonDocument instead [-Wdeprecated-declarations]
-  108 |     StaticJsonDocument<1024> doc;
-      |     ^~~~~~~~~~~~~~~~~~
+etch_jan17a.ino: In lambda function:
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino:108:5: warning: 'template<unsigned int N> class ArduinoJson::V742PB22::StaticJsonDocument' is deprecated: use JsonDocument instead [-Wdeprecated-declarations]
 In file included from c:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson.hpp:65,
                  from c:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson.h:9,
-                 from c:\Users\sasa\Documents\Arduino\libraries\ESP_Async_WebServer\src/ESPAsyncWebServer.h:21,
-                 from C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino:6:
+                 from c:\Users\sasa\Documents\Arduino\libraries\ESP_Async_WebServer/ESPAsyncWebServer.h:21,
+                 from H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino:6:
 c:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/compatibility.hpp:63:58: note: declared here
    63 | class ARDUINOJSON_DEPRECATED("use JsonDocument instead") StaticJsonDocument
       |                                                          ^~~~~~~~~~~~~~~~~~
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino:109:44: warning: 'ArduinoJson::V742PB22::JsonArray ArduinoJson::V742PB22::JsonDocument::createNestedArray(TChar*) [with TChar = const char]' is deprecated: use doc[key].to<JsonArray>() instead [-Wdeprecated-declarations]
-  109 |     JsonArray array = doc.createNestedArray("nodes");
-      |                       ~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino:109:44: warning: 'ArduinoJson::V742PB22::JsonArray ArduinoJson::V742PB22::JsonDocument::createNestedArray(TChar*) [with TChar = const char]' is deprecated: use doc[key].to<JsonArray>() instead [-Wdeprecated-declarations]
 In file included from c:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson.hpp:42:
 c:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:356:13: note: declared here
   356 |   JsonArray createNestedArray(TChar* key) {
       |             ^~~~~~~~~~~~~~~~~
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino:112:49: warning: 'ArduinoJson::V742PB22::JsonObject ArduinoJson::V742PB22::JsonArray::createNestedObject() const' is deprecated: use add<JsonObject>() instead [-Wdeprecated-declarations]
-  112 |       JsonObject node = array.createNestedObject();
-      |                         ~~~~~~~~~~~~~~~~~~~~~~~~^~
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino:112:49: warning: 'ArduinoJson::V742PB22::JsonObject ArduinoJson::V742PB22::JsonArray::createNestedObject() const' is deprecated: use add<JsonObject>() instead [-Wdeprecated-declarations]
 c:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/compatibility.hpp:140:19: note: declared here
   140 | inline JsonObject JsonArray::createNestedObject() const {
       |                   ^~~~~~~~~
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino: In lambda function:
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino:132:7: warning: 'template<unsigned int N> class ArduinoJson::V742PB22::StaticJsonDocument' is deprecated: use JsonDocument instead [-Wdeprecated-declarations]
-  132 |       StaticJsonDocument<256> doc;
-      |       ^~~~~~~~~~~~~~~~~~
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino: In lambda function:
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino:132:7: warning: 'template<unsigned int N> class ArduinoJson::V742PB22::StaticJsonDocument' is deprecated: use JsonDocument instead [-Wdeprecated-declarations]
 c:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/compatibility.hpp:63:58: note: declared here
    63 | class ARDUINOJSON_DEPRECATED("use JsonDocument instead") StaticJsonDocument
       |                                                          ^~~~~~~~~~~~~~~~~~
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino: In function 'void handleWSMessage(uint8_t, uint8_t*, size_t)':
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino:171:3: warning: 'template<unsigned int N> class ArduinoJson::V742PB22::StaticJsonDocument' is deprecated: use JsonDocument instead [-Wdeprecated-declarations]
-  171 |   StaticJsonDocument<256> doc;
-      |   ^~~~~~~~~~~~~~~~~~
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino: In function 'void handleWSMessage(uint8_t, uint8_t*, size_t)':
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino:171:3: warning: 'template<unsigned int N> class ArduinoJson::V742PB22::StaticJsonDocument' is deprecated: use JsonDocument instead [-Wdeprecated-declarations]
 c:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/compatibility.hpp:63:58: note: declared here
    63 | class ARDUINOJSON_DEPRECATED("use JsonDocument instead") StaticJsonDocument
       |                                                          ^~~~~~~~~~~~~~~~~~
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino: In function 'void sendNodeListWS()':
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino:193:3: warning: 'template<unsigned int N> class ArduinoJson::V742PB22::StaticJsonDocument' is deprecated: use JsonDocument instead [-Wdeprecated-declarations]
-  193 |   StaticJsonDocument<1024> doc;
-      |   ^~~~~~~~~~~~~~~~~~
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino: In function 'void sendNodeListWS()':
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino:193:3: warning: 'template<unsigned int N> class ArduinoJson::V742PB22::StaticJsonDocument' is deprecated: use JsonDocument instead [-Wdeprecated-declarations]
 c:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/compatibility.hpp:63:58: note: declared here
    63 | class ARDUINOJSON_DEPRECATED("use JsonDocument instead") StaticJsonDocument
       |                                                          ^~~~~~~~~~~~~~~~~~
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino:196:42: warning: 'ArduinoJson::V742PB22::JsonArray ArduinoJson::V742PB22::JsonDocument::createNestedArray(TChar*) [with TChar = const char]' is deprecated: use doc[key].to<JsonArray>() instead [-Wdeprecated-declarations]
-  196 |   JsonArray array = doc.createNestedArray("nodes");
-      |                     ~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino:196:42: warning: 'ArduinoJson::V742PB22::JsonArray ArduinoJson::V742PB22::JsonDocument::createNestedArray(TChar*) [with TChar = const char]' is deprecated: use doc[key].to<JsonArray>() instead [-Wdeprecated-declarations]
 c:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:356:13: note: declared here
   356 |   JsonArray createNestedArray(TChar* key) {
       |             ^~~~~~~~~~~~~~~~~
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino:198:47: warning: 'ArduinoJson::V742PB22::JsonObject ArduinoJson::V742PB22::JsonArray::createNestedObject() const' is deprecated: use add<JsonObject>() instead [-Wdeprecated-declarations]
-  198 |     JsonObject node = array.createNestedObject();
-      |                       ~~~~~~~~~~~~~~~~~~~~~~~~^~
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino:198:47: warning: 'ArduinoJson::V742PB22::JsonObject ArduinoJson::V742PB22::JsonArray::createNestedObject() const' is deprecated: use add<JsonObject>() instead [-Wdeprecated-declarations]
 c:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/compatibility.hpp:140:19: note: declared here
   140 | inline JsonObject JsonArray::createNestedObject() const {
       |                   ^~~~~~~~~
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino: In function 'void sendSystemInfoWS()':
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino:211:3: warning: 'template<unsigned int N> class ArduinoJson::V742PB22::StaticJsonDocument' is deprecated: use JsonDocument instead [-Wdeprecated-declarations]
-  211 |   StaticJsonDocument<256> doc;
-      |   ^~~~~~~~~~~~~~~~~~
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino: In function 'void sendSystemInfoWS()':
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino:211:3: warning: 'template<unsigned int N> class ArduinoJson::V742PB22::StaticJsonDocument' is deprecated: use JsonDocument instead [-Wdeprecated-declarations]
 c:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/compatibility.hpp:63:58: note: declared here
    63 | class ARDUINOJSON_DEPRECATED("use JsonDocument instead") StaticJsonDocument
       |                                                          ^~~~~~~~~~~~~~~~~~
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino: In function 'void setupESPNow()':
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino:236:28: error: invalid conversion from 'void (*)(const uint8_t*, const uint8_t*, int)' {aka 'void (*)(const unsigned char*, const unsigned char*, int)'} to 'esp_now_recv_cb_t' {aka 'void (*)(const esp_now_recv_info*, const unsigned char*, int)'} [-fpermissive]
-  236 |   esp_now_register_recv_cb(onESPNowRecv);
-      |                            ^~~~~~~~~~~~
-      |                            |
-      |                            void (*)(const uint8_t*, const uint8_t*, int) {aka void (*)(const unsigned char*, const unsigned char*, int)}
-In file included from C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino:9:
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino: In function 'void setupESPNow()':
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino:236:28: error: invalid conversion from 'void (*)(const uint8_t*, const uint8_t*, int)' {aka 'void (*)(const unsigned char*, const unsigned char*, int)'} to 'esp_now_recv_cb_t' {aka 'void (*)(const esp_now_recv_info*, const unsigned char*, int)'} [-fpermissive]
+In file included from H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino:9:
 C:\Users\sasa\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-9bb7aa84-v2\esp32s3/include/esp_wifi/include/esp_now.h:172:54: note:   initializing argument 1 of 'esp_err_t esp_now_register_recv_cb(esp_now_recv_cb_t)'
   172 | esp_err_t esp_now_register_recv_cb(esp_now_recv_cb_t cb);
       |                                    ~~~~~~~~~~~~~~~~~~^~
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino:237:28: error: invalid conversion from 'void (*)(const uint8_t*, esp_now_send_status_t)' {aka 'void (*)(const unsigned char*, esp_now_send_status_t)'} to 'esp_now_send_cb_t' {aka 'void (*)(const wifi_tx_info_t*, esp_now_send_status_t)'} [-fpermissive]
-  237 |   esp_now_register_send_cb(onESPNowSend);
-      |                            ^~~~~~~~~~~~
-      |                            |
-      |                            void (*)(const uint8_t*, esp_now_send_status_t) {aka void (*)(const unsigned char*, esp_now_send_status_t)}
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino:237:28: error: invalid conversion from 'void (*)(const uint8_t*, esp_now_send_status_t)' {aka 'void (*)(const unsigned char*, esp_now_send_status_t)'} to 'esp_now_send_cb_t' {aka 'void (*)(const wifi_tx_info_t*, esp_now_send_status_t)'} [-fpermissive]
 C:\Users\sasa\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-9bb7aa84-v2\esp32s3/include/esp_wifi/include/esp_now.h:193:54: note:   initializing argument 1 of 'esp_err_t esp_now_register_send_cb(esp_now_send_cb_t)'
   193 | esp_err_t esp_now_register_send_cb(esp_now_send_cb_t cb);
       |                                    ~~~~~~~~~~~~~~~~~~^~
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino: In function 'void onESPNowRecv(const uint8_t*, const uint8_t*, int)':
-C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved2026017-5080-nb81c4.svdo\sketch_jan17a\sketch_jan17a.ino:252:3: warning: 'template<unsigned int N> class ArduinoJson::V742PB22::StaticJsonDocument' is deprecated: use JsonDocument instead [-Wdeprecated-declarations]
-  252 |   StaticJsonDocument<256> doc;
-      |   ^~~~~~~~~~~~~~~~~~
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino: In function 'void onESPNowRecv(const uint8_t*, const uint8_t*, int)':
+H:\RADIO\MK\Proektis\Proekt UmniyDom\Нов проект на ESP32_S3\sketch\sketch_jan17a\sketch_jan17a.ino:252:3: warning: 'template<unsigned int N> class ArduinoJson::V742PB22::StaticJsonDocument' is deprecated: use JsonDocument instead [-Wdeprecated-declarations]
 c:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/compatibility.hpp:63:58: note: declared here
    63 | class ARDUINOJSON_DEPRECATED("use JsonDocument instead") StaticJsonDocument
       |                                                          ^~~~~~~~~~~~~~~~~~
