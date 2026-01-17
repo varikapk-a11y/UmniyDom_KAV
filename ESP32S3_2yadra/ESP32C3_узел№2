@@ -1,0 +1,179 @@
+// УЗЕЛ #2 (ESP32-C3) для Smart Home Hub
+// MAC узла: 88:56:A6:7C:F2:A8
+// Назначение: PIR датчик + 2 реле
+
+#include <esp_now.h>
+#include <WiFi.h>
+
+// === КОНФИГУРАЦИЯ УЗЛА ===
+#define NODE_ID "PIR_Corridor"     // Должен совпадать с именем в хабе!
+#define NODE_TYPE 2                // 2 = PIR датчик (по протоколу хаба)
+
+// MAC-адрес хаба ESP32-S3 (ЗАМЕНИТЕ НА ВАШ РЕАЛЬНЫЙ MAC!)
+uint8_t hubMacAddress[] = {0x9C, 0x13, 0x9E, 0xF2, 0x9D, 0xD8};
+
+// Пины (настройте под свою схему подключения)
+#define PIR_PIN 4          // Пин датчика движения (INPUT)
+#define RELAY_1_PIN 0      // Пин для реле 1 (GPIO0)
+#define RELAY_2_PIN 1      // Пин для реле 2 (GPIO1)
+#define STATUS_LED 8       // Светодиод для индикации (встроенный/внешний)
+
+// Интервал отправки данных (мс) и интервал проверки PIR
+#define DATA_SEND_INTERVAL 10000
+#define PIR_CHECK_INTERVAL 500
+
+// === СТРУКТУРА ДАННЫХ (ДОЛЖНА СОВПАДАТЬ С ХАБОМ!) ===
+typedef struct __attribute__((packed)) {
+  char node_id[32];
+  uint8_t node_type;
+  float value1;          // Основное значение (для PIR: 1.0=движение, 0.0=покой)
+  float value2;          // Доп. значение (не используется здесь)
+  uint8_t relay1_state;  // Состояние реле 1 (1=ВКЛ, 0=ВЫКЛ)
+  uint8_t relay2_state;  // Состояние реле 2
+  uint8_t status;        // Общий статус (можно использовать для кодов ошибок)
+  uint32_t timestamp;
+} espnow_message_t;
+
+// Глобальные переменные
+espnow_message_t outgoingData;
+bool relay1State = false;
+bool relay2State = false;
+bool lastPirState = false;
+unsigned long lastSendTime = 0;
+unsigned long lastPirCheckTime = 0;
+
+// === ОБРАБОТЧИКИ ESP-NOW ===
+// Callback при отправке данных
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.print("Статус отправки хабу: ");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Успех ✅" : "Ошибка ❌");
+  digitalWrite(STATUS_LED, (status == ESP_NOW_SEND_SUCCESS) ? LOW : HIGH);
+  delay(50);
+  digitalWrite(STATUS_LED, HIGH);
+}
+
+// Callback при получении данных (КОМАНД от хаба)
+void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingData, int len) {
+  // Структура команды от хаба (пример)
+  typedef struct __attribute__((packed)) {
+    char command[16];  // "relay_on", "relay_off", "relay_toggle"
+    int relay_num;     // Номер реле (1 или 2)
+    int value;
+  } node_command_t;
+
+  if (len == sizeof(node_command_t)) {
+    node_command_t cmd;
+    memcpy(&cmd, incomingData, sizeof(cmd));
+    Serial.print("Получена команда от хаба: ");
+    Serial.print(cmd.command);
+    Serial.print(" для реле ");
+    Serial.println(cmd.relay_num);
+
+    // Обработка команд
+    int relayPin = (cmd.relay_num == 1) ? RELAY_1_PIN : RELAY_2_PIN;
+    bool *relayState = (cmd.relay_num == 1) ? &relay1State : &relay2State;
+
+    if (strcmp(cmd.command, "relay_on") == 0) {
+      digitalWrite(relayPin, HIGH);
+      *relayState = true;
+      Serial.println("Реле ВКЛ");
+    } else if (strcmp(cmd.command, "relay_off") == 0) {
+      digitalWrite(relayPin, LOW);
+      *relayState = false;
+      Serial.println("Реле ВЫКЛ");
+    } else if (strcmp(cmd.command, "relay_toggle") == 0) {
+      *relayState = !(*relayState);
+      digitalWrite(relayPin, (*relayState) ? HIGH : LOW);
+      Serial.println("Реле переключено");
+    }
+    // После изменения состояния сразу отправим обновление хабу
+    sendDataToHub();
+  }
+}
+
+// === ОСНОВНЫЕ ФУНКЦИИ ===
+// Функция отправки данных на хаб
+void sendDataToHub() {
+  // Заполняем структуру данными
+  strncpy(outgoingData.node_id, NODE_ID, sizeof(outgoingData.node_id));
+  outgoingData.node_type = NODE_TYPE;
+  outgoingData.value1 = (digitalRead(PIR_PIN) == HIGH) ? 1.0 : 0.0;
+  outgoingData.value2 = 0.0; // Не используется для PIR
+  outgoingData.relay1_state = relay1State ? 1 : 0;
+  outgoingData.relay2_state = relay2State ? 1 : 0;
+  outgoingData.status = 1; // Статус "все в порядке"
+  outgoingData.timestamp = millis();
+
+  // Отправляем через ESP-NOW
+  esp_err_t result = esp_now_send(hubMacAddress, (uint8_t *)&outgoingData, sizeof(outgoingData));
+  if (result != ESP_OK) {
+    Serial.println("❌ Ошибка отправки ESP-NOW!");
+  }
+}
+
+// === SETUP ===
+void setup() {
+  Serial.begin(115200);
+  delay(1000); // Для инициализации Serial
+  Serial.println("\n=== УЗЕЛ #2: PIR + 2 реле ===");
+  Serial.println("MAC: 88:56:A6:7C:F2:A8");
+
+  // Настройка пинов
+  pinMode(PIR_PIN, INPUT);
+  pinMode(RELAY_1_PIN, OUTPUT);
+  pinMode(RELAY_2_PIN, OUTPUT);
+  pinMode(STATUS_LED, OUTPUT);
+  digitalWrite(RELAY_1_PIN, LOW);
+  digitalWrite(RELAY_2_PIN, LOW);
+  digitalWrite(STATUS_LED, HIGH); // LED выкл (активный LOW)
+
+  // Инициализация Wi-Fi и ESP-NOW
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("❌ Критическая ошибка инициализации ESP-NOW!");
+    while (1) delay(100);
+  }
+
+  esp_now_register_send_cb(OnDataSent);
+  esp_now_register_recv_cb(OnDataRecv);
+
+  // Регистрация хаба как пира
+  esp_now_peer_info_t peerInfo;
+  memset(&peerInfo, 0, sizeof(peerInfo));
+  memcpy(peerInfo.peer_addr, hubMacAddress, 6);
+  peerInfo.channel = 1;
+  peerInfo.encrypt = false;
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("❌ Не удалось зарегистрировать хаб!");
+  } else {
+    Serial.println("✅ Хаб зарегистрирован. Узел готов.");
+  }
+}
+
+// === LOOP ===
+void loop() {
+  unsigned long currentMillis = millis();
+
+  // 1. Проверка датчика PIR (часто, но не слишком)
+  if (currentMillis - lastPirCheckTime > PIR_CHECK_INTERVAL) {
+    lastPirCheckTime = currentMillis;
+    bool currentPirState = (digitalRead(PIR_PIN) == HIGH);
+    if (currentPirState != lastPirState) {
+      Serial.println(currentPirState ? "🔴 ДВИЖЕНИЕ!" : "🟢 Покой");
+      lastPirState = currentPirState;
+      // При изменении состояния PIR сразу шлем данные
+      sendDataToHub();
+    }
+  }
+
+  // 2. Регулярная отправка данных (даже если ничего не менялось)
+  if (currentMillis - lastSendTime > DATA_SEND_INTERVAL) {
+    lastSendTime = currentMillis;
+    sendDataToHub();
+    Serial.println("📤 Регулярная отправка данных хабу");
+  }
+
+  delay(10); // Небольшая задержка для стабильности
+}
