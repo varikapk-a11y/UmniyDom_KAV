@@ -1,0 +1,302 @@
+/*
+  ESP32-S3 SMART HOME HUB - РАБОЧАЯ ВЕРСИЯ
+  Упрощённый и стабильный код
+  Использует: встроенный WebServer + ESP-NOW
+*/
+
+// ========== БИБЛИОТЕКИ ==========
+#include <WiFi.h>
+#include <WebServer.h>
+#include <esp_now.h>
+#include <esp_wifi.h>
+
+// ========== КОНФИГУРАЦИЯ ==========
+#define HUB_ID 1
+#define HTTP_PORT 80
+#define NODE_TIMEOUT 30000
+
+const char* AP_SSID = "SmartHomeHub-S3";
+const char* AP_PASSWORD = "12345678";  // 8+ символов
+
+// ========== СТРУКТУРЫ ДАННЫХ ==========
+#pragma pack(push, 1)
+typedef struct {
+  char command[32];
+  uint8_t sender_id;
+  uint8_t target_id;
+  uint32_t timestamp;
+} espnow_message_t;
+#pragma pack(pop)
+
+typedef struct {
+  uint8_t id;
+  bool online;
+  String lastSeen;
+  unsigned long lastUpdate;
+} node_data_t;
+
+// ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+WebServer server(HTTP_PORT);
+node_data_t nodes[5];
+uint8_t nodeCount = 0;
+bool espnowActive = false;
+
+// MAC-адреса узлов (ЗАМЕНИТЕ НА СВОИ!)
+const uint8_t NODE_MACS[][6] = {
+  {0x9C, 0x9C, 0x1F, 0xC7, 0x2D, 0x94},  // Узел 1
+  {0x24, 0x6F, 0x28, 0x8A, 0x10, 0x3C}   // Узел 2
+};
+const uint8_t NODE_MACS_COUNT = sizeof(NODE_MACS) / 6;
+
+// ========== ФУНКЦИИ ESP-NOW ==========
+void initESPNow() {
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("❌ ESP-NOW init failed");
+    return;
+  }
+  
+  esp_now_register_recv_cb([](const esp_now_recv_info_t *info, const uint8_t *data, int len) {
+    (void)info; // Неиспользуемый параметр
+    
+    if (len < (int)sizeof(espnow_message_t)) return;
+    
+    espnow_message_t msg;
+    memcpy(&msg, data, sizeof(msg));
+    
+    // Обновляем узел
+    for (uint8_t i = 0; i < nodeCount; i++) {
+      if (nodes[i].id == msg.sender_id) {
+        nodes[i].online = true;
+        nodes[i].lastUpdate = millis();
+        nodes[i].lastSeen = getTimeString();
+        
+        Serial.printf("📥 Узел %d: %s\n", msg.sender_id, msg.command);
+        return;
+      }
+    }
+    
+    // Новый узел
+    if (nodeCount < 5) {
+      nodes[nodeCount].id = msg.sender_id;
+      nodes[nodeCount].online = true;
+      nodes[nodeCount].lastUpdate = millis();
+      nodes[nodeCount].lastSeen = getTimeString();
+      nodeCount++;
+      Serial.printf("🆕 Новый узел: #%d\n", msg.sender_id);
+    }
+  });
+  
+  // Добавляем пиров
+  esp_now_peer_info_t peer = {};
+  peer.channel = 1;
+  peer.encrypt = false;
+  
+  for (uint8_t i = 0; i < NODE_MACS_COUNT; i++) {
+    memcpy(peer.peer_addr, NODE_MACS[i], 6);
+    esp_now_add_peer(&peer);
+  }
+  
+  espnowActive = true;
+  Serial.println("✅ ESP-NOW ready");
+}
+
+bool sendESPNowCommand(uint8_t nodeId, const char* command) {
+  if (!espnowActive || nodeId == 0 || nodeId > NODE_MACS_COUNT) {
+    return false;
+  }
+  
+  espnow_message_t msg;
+  strlcpy(msg.command, command, sizeof(msg.command));
+  msg.sender_id = HUB_ID;
+  msg.target_id = nodeId;
+  msg.timestamp = millis();
+  
+  esp_err_t result = esp_now_send(NODE_MACS[nodeId-1], (uint8_t*)&msg, sizeof(msg));
+  
+  Serial.printf("📤 Узел %d: %s (%s)\n", 
+                nodeId, command, 
+                result == ESP_OK ? "OK" : "FAIL");
+  return result == ESP_OK;
+}
+
+// ========== ВЕБ-СЕРВЕР ==========
+void initWebServer() {
+  // Главная страница
+  server.on("/", HTTP_GET, []() {
+    String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>";
+    html += "<title>Умный Дом Хаб</title><style>";
+    html += "body{font-family:Arial;padding:20px;background:#f5f5f5;}";
+    html += ".container{background:white;padding:20px;border-radius:10px;max-width:800px;margin:0 auto;}";
+    html += "h1{color:#4361ee;} .node{background:#f8f9fa;padding:15px;margin:10px 0;border-radius:8px;border-left:4px solid #4361ee;}";
+    html += ".online{color:#2ecc71;} .offline{color:#e74c3c;}";
+    html += "button{background:#4361ee;color:white;border:none;padding:10px 15px;margin:5px;border-radius:5px;cursor:pointer;}";
+    html += "button:hover{background:#3a0ca3;} .status-bar{display:flex;gap:15px;margin:20px 0;}";
+    html += ".status-item{background:#e9ecef;padding:10px;border-radius:5px;}";
+    html += "</style></head><body><div class='container'>";
+    
+    html += "<h1>🏠 Умный Дом Хаб (ESP32-S3)</h1>";
+    
+    // Статус-бар
+    html += "<div class='status-bar'>";
+    html += "<div class='status-item'>Wi-Fi: " + String(AP_SSID) + "</div>";
+    html += "<div class='status-item'>IP: " + WiFi.softAPIP().toString() + "</div>";
+    html += "<div class='status-item'>Узлов: " + String(nodeCount) + "</div>";
+    html += "</div>";
+    
+    // Список узлов
+    html += "<h2>📡 Активные узлы</h2>";
+    if (nodeCount == 0) {
+      html += "<p>Узлы не обнаружены. Убедитесь, что они включены.</p>";
+    } else {
+      for (uint8_t i = 0; i < nodeCount; i++) {
+        html += "<div class='node'>";
+        html += "<strong>Узел #" + String(nodes[i].id) + "</strong> ";
+        
+        // ВАЖНО: Исправленная строка - используем String() для конкатенации
+        html += "<span class='" + String(nodes[i].online ? "online" : "offline") + "'>";
+        html += String(nodes[i].online ? "ОНЛАЙН" : "ОФФЛАЙН") + "</span><br>";
+        
+        html += "Последний контакт: " + nodes[i].lastSeen + "<br>";
+        html += "<button onclick=\"sendCmd(" + String(nodes[i].id) + ", 'LED_ON')\">💡 Свет ВКЛ</button>";
+        html += "<button onclick=\"sendCmd(" + String(nodes[i].id) + ", 'LED_OFF')\">💡 Свет ВЫКЛ</button>";
+        html += "<button onclick=\"sendCmd(" + String(nodes[i].id) + ", 'GET_STATUS')\">🔄 Статус</button>";
+        html += "</div>";
+      }
+    }
+    
+    // Панель управления
+    html += "<h2>🎛️ Управление</h2>";
+    html += "<div style='margin:20px 0;'>";
+    html += "<button onclick=\"sendCmd(1, 'LED_ON')\">Узел1 💡 ВКЛ</button>";
+    html += "<button onclick=\"sendCmd(1, 'LED_OFF')\">Узел1 💡 ВЫКЛ</button>";
+    html += "<button onclick=\"sendCmd(2, 'LED_ON')\">Узел2 💡 ВКЛ</button>";
+    html += "<button onclick=\"sendCmd(2, 'LED_OFF')\">Узел2 💡 ВЫКЛ</button>";
+    html += "<button onclick=\"location.reload()\">🔄 Обновить</button>";
+    html += "</div>";
+    
+    // JavaScript
+    html += "<script>";
+    html += "function sendCmd(nodeId, cmd) {";
+    html += "  fetch('/cmd?node=' + nodeId + '&cmd=' + encodeURIComponent(cmd))";
+    html += "    .then(r => r.text())";
+    html += "    .then(t => console.log('Ответ:', t));";
+    html += "  alert('Команда \"' + cmd + '\" отправлена узлу ' + nodeId);";
+    html += "}";
+    html += "</script>";
+    
+    html += "</div></body></html>";
+    server.send(200, "text/html", html);
+  });
+  
+  // API: отправка команды
+  server.on("/cmd", HTTP_GET, []() {
+    if (server.hasArg("node") && server.hasArg("cmd")) {
+      uint8_t nodeId = server.arg("node").toInt();
+      String command = server.arg("cmd");
+      
+      bool success = sendESPNowCommand(nodeId, command.c_str());
+      String response = success ? "OK" : "ERROR";
+      
+      server.send(200, "text/plain", "Команда '" + command + "' к узлу " + String(nodeId) + ": " + response);
+    } else {
+      server.send(400, "text/plain", "Ошибка: нужны параметры node и cmd");
+    }
+  });
+  
+  // API: список узлов (JSON)
+  server.on("/api/nodes", HTTP_GET, []() {
+    String json = "[";
+    for (uint8_t i = 0; i < nodeCount; i++) {
+      if (i > 0) json += ",";
+      json += "{";
+      json += "\"id\":" + String(nodes[i].id) + ",";
+      json += "\"online\":" + String(nodes[i].online ? "true" : "false") + ",";
+      json += "\"lastSeen\":\"" + nodes[i].lastSeen + "\"";
+      json += "}";
+    }
+    json += "]";
+    server.send(200, "application/json", json);
+  });
+  
+  server.begin();
+  Serial.println("✅ Веб-сервер запущен на порту 80");
+}
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+String getTimeString() {
+  unsigned long seconds = millis() / 1000;
+  uint8_t hours = (uint8_t)((seconds / 3600) % 24);
+  uint8_t minutes = (uint8_t)((seconds / 60) % 60);
+  uint8_t secs = (uint8_t)(seconds % 60);
+  
+  char buf[10];
+  snprintf(buf, sizeof(buf), "%02u:%02u:%02u", hours, minutes, secs);
+  return String(buf);
+}
+
+void checkNodeTimeouts() {
+  for (uint8_t i = 0; i < nodeCount; i++) {
+    if (nodes[i].online && (millis() - nodes[i].lastUpdate > NODE_TIMEOUT)) {
+      nodes[i].online = false;
+      Serial.printf("⏰ Узел #%d: таймаут\n", nodes[i].id);
+    }
+  }
+}
+
+// ========== SETUP & LOOP ==========
+void setup() {
+  Serial.begin(115200);
+  delay(3000); // Ждём подключения Serial
+  
+  Serial.println("\n" + String(ESP.getChipModel()) + " SMART HOME HUB");
+  Serial.println("========================================");
+  
+  // Wi-Fi точка доступа
+  Serial.print("Запуск Wi-Fi: ");
+  Serial.println(AP_SSID);
+  
+  WiFi.softAP(AP_SSID, AP_PASSWORD);
+  delay(100);
+  
+  Serial.print("IP адрес: ");
+  Serial.println(WiFi.softAPIP());
+  
+  // ESP-NOW
+  Serial.print("Инициализация ESP-NOW... ");
+  initESPNow();
+  
+  // Веб-сервер
+  Serial.print("Запуск веб-сервера... ");
+  initWebServer();
+  
+  Serial.println("\n✅ ХАБ ГОТОВ К РАБОТЕ!");
+  Serial.println("1. Подключитесь к Wi-Fi: " + String(AP_SSID));
+  Serial.println("2. Пароль: " + String(AP_PASSWORD));
+  Serial.println("3. Откройте в браузере: http://" + WiFi.softAPIP().toString());
+  Serial.println("4. Ждите подключения узлов...\n");
+  
+  // Настройка светодиода (если есть на плате)
+  pinMode(48, OUTPUT);
+  digitalWrite(48, HIGH); // Включаем на старте
+}
+
+void loop() {
+  // Обработка веб-запросов
+  server.handleClient();
+  
+  // Проверка таймаутов узлов
+  static unsigned long lastCheck = 0;
+  if (millis() - lastCheck > 5000) {
+    lastCheck = millis();
+    checkNodeTimeouts();
+  }
+  
+  // Мигание светодиодом (1 раз в 2 сек)
+  static unsigned long lastBlink = 0;
+  if (millis() - lastBlink > 2000) {
+    lastBlink = millis();
+    digitalWrite(48, !digitalRead(48));
+  }
+  
+  delay(10);
+}
