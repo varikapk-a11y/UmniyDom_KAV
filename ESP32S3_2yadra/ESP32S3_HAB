@@ -1,0 +1,615 @@
+// ===================== CONFIGURATION =====================
+// Установите true для отладки в Serial Monitor
+#define DEBUG_MODE true
+
+// MAC адреса ваших узлов (заменены на ваши реальные MAC)
+uint8_t node_mac_1[] = {0x88, 0x56, 0xA6, 0x7C, 0xF2, 0xA8}; // Узел #2 (PIR)
+uint8_t node_mac_2[] = {0x88, 0x56, 0xA6, 0x7D, 0x09, 0x64}; // Узел #3 (Реле)
+uint8_t node_mac_3[] = {0x10, 0x00, 0x3B, 0xB1, 0xA6, 0x9C}; // Узел #4 (RGB)
+uint8_t node_mac_4[] = {0xAC, 0xEB, 0xE6, 0x49, 0x10, 0x28}; // Узел #5 (Датчик света)
+
+// Структура для хранения данных узла
+struct NodeData {
+  uint8_t mac[6];
+  String node_id;
+  uint8_t node_type; // 1=DHT22, 2=PIR, 3=RELAY, 4=RGB, 5=LIGHT_SENSOR
+  float value1;
+  float value2;
+  uint8_t relay1_state;
+  uint8_t relay2_state;
+  uint8_t status;
+  unsigned long last_seen;
+  bool online;
+};
+
+// Глобальные переменные (используются в обоих ядрах)
+volatile NodeData nodes[4];
+volatile bool newDataAvailable = false;
+volatile uint8_t updatedNodeIndex = 0;
+
+// ===================== CORE 0: NETWORK & WEB =====================
+#include <WiFi.h>
+#include <WebServer.h>
+#include <WebSocketsServer.h>
+#include <ESPmDNS.h>
+
+WebServer server(80);
+WebSocketsServer webSocket = WebSocketsServer(81);
+
+// HTML страница (встроенная в код - проще чем LittleFS)
+const char* htmlPage = R"rawliteral(
+<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Home Hub - ESP32-S3</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; padding: 20px; }
+.container { max-width: 1200px; margin: 0 auto; }
+header { background: rgba(255,255,255,0.95); padding: 25px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+header h1 { color: #2d3748; font-size: 2.2em; margin-bottom: 10px; }
+.status-bar { display: flex; gap: 25px; font-weight: 600; font-size: 1.1em; }
+.status-online { color: #38a169; }
+.status-offline { color: #e53e3e; }
+.dashboard { display: flex; flex-direction: column; gap: 30px; }
+.section { background: rgba(255,255,255,0.95); padding: 25px; border-radius: 15px; box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+.section h2 { margin-bottom: 20px; color: #2d3748; border-bottom: 3px solid #667eea; padding-bottom: 12px; font-size: 1.8em; }
+.nodes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; margin-top: 20px; }
+.node-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: transform 0.3s, box-shadow 0.3s; border-left: 5px solid #667eea; }
+.node-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+.node-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.node-id { font-size: 1.4em; font-weight: 700; color: #2d3748; }
+.node-type { font-size: 0.9em; padding: 5px 15px; border-radius: 20px; color: white; font-weight: 600; }
+.type-pir { background: #4299e1; }
+.type-relay { background: #ed8936; }
+.type-rgb { background: #9f7aea; }
+.type-light { background: #48bb78; }
+.node-data { margin: 15px 0; font-size: 1.1em; }
+.data-row { display: flex; justify-content: space-between; margin: 8px 0; padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+.data-label { color: #718096; }
+.data-value { font-weight: 600; color: #2d3748; }
+.relay-control { display: flex; gap: 15px; margin-top: 20px; }
+.relay-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s; font-size: 1em; }
+.btn-on { background: #48bb78; color: white; }
+.btn-on:hover { background: #38a169; }
+.btn-off { background: #f56565; color: white; }
+.btn-off:hover { background: #e53e3e; }
+.btn-toggle { background: #667eea; color: white; }
+.btn-toggle:hover { background: #5a67d8; }
+.node-footer { margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 0.9em; }
+.online-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+.dot-online { background: #48bb78; }
+.dot-offline { background: #e53e3e; }
+.last-seen { color: #a0aec0; }
+.connection-status { position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; border-radius: 10px; background: rgba(255,255,255,0.9); box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-weight: 600; }
+.connected { border-left: 5px solid #48bb78; }
+.disconnected { border-left: 5px solid #f56565; }
+@media (max-width: 768px) { .nodes-grid { grid-template-columns: 1fr; } .container { padding: 10px; } }
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <h1>🏠 Smart Home Hub - ESP32-S3</h1>
+  <div class="status-bar">
+    <span id="wifi-status" class="status-offline">WiFi: Отключен</span>
+    <span id="nodes-count">Узлов: 0/4</span>
+    <span id="ws-status" class="status-offline">WebSocket: Отключен</span>
+  </div>
+</header>
+<div class="dashboard">
+  <section class="section">
+    <h2>📡 Беспроводные узлы ESP-NOW</h2>
+    <div class="nodes-grid" id="nodes-container">
+      <!-- Узлы будут добавляться динамически -->
+    </div>
+  </section>
+</div>
+<div id="connection-status" class="connection-status disconnected">
+  🔌 Ожидание подключения к хабу...
+</div>
+</div>
+<script>
+let socket;
+const nodes = {};
+function connectWebSocket() {
+  const ip = window.location.hostname || "192.168.4.1";
+  socket = new WebSocket(`ws://${ip}:81`);
+  socket.onopen = () => {
+    console.log("✅ WebSocket подключен");
+    document.getElementById('ws-status').textContent = "WebSocket: Подключен";
+    document.getElementById('ws-status').className = "status-online";
+    document.getElementById('connection-status').className = "connection-status connected";
+    document.getElementById('connection-status').innerHTML = "✅ Подключено к хабу";
+    socket.send(JSON.stringify({cmd: "get_nodes"}));
+  };
+  socket.onclose = () => {
+    console.log("❌ WebSocket отключен");
+    document.getElementById('ws-status').textContent = "WebSocket: Отключен";
+    document.getElementById('ws-status').className = "status-offline";
+    document.getElementById('connection-status').className = "connection-status disconnected";
+    document.getElementById('connection-status').innerHTML = "🔌 Ожидание подключения к хабу...";
+    setTimeout(connectWebSocket, 3000);
+  };
+  socket.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      handleMessage(data);
+    } catch(e) {
+      console.error("Ошибка JSON:", e);
+    }
+  };
+  socket.onerror = (error) => {
+    console.error("WebSocket ошибка:", error);
+  };
+}
+function handleMessage(data) {
+  switch(data.event) {
+    case 'nodes_list':
+      updateNodesList(data.nodes);
+      break;
+    case 'node_update':
+      updateNode(data);
+      break;
+    case 'node_offline':
+      setNodeOffline(data.id);
+      break;
+    case 'system_status':
+      document.getElementById('wifi-status').textContent = `WiFi: ${data.wifi_connected ? 'Подключен' : 'Отключен'}`;
+      document.getElementById('wifi-status').className = data.wifi_connected ? "status-online" : "status-offline";
+      break;
+  }
+}
+function updateNodesList(nodesList) {
+  const container = document.getElementById('nodes-container');
+  container.innerHTML = '';
+  document.getElementById('nodes-count').textContent = `Узлов: ${nodesList.length}/4`;
+  nodesList.forEach(node => {
+    const nodeCard = createNodeCard(node);
+    container.appendChild(nodeCard);
+    nodes[node.id] = node;
+  });
+}
+function updateNode(data) {
+  if(nodes[data.id]) {
+    nodes[data.id] = {...nodes[data.id], ...data};
+    updateNodeCard(data.id);
+  }
+}
+function setNodeOffline(nodeId) {
+  if(nodes[nodeId]) {
+    nodes[nodeId].online = false;
+    updateNodeCard(nodeId);
+  }
+}
+function createNodeCard(node) {
+  const div = document.createElement('div');
+  div.className = 'node-card';
+  div.id = `node-${node.id}`;
+  const typeNames = {2:'PIR датчик',3:'Реле модуль',4:'RGB свет',5:'Датчик света'};
+  const typeColors = {2:'type-pir',3:'type-relay',4:'type-rgb',5:'type-light'};
+  let content = `<div class="node-header"><div class="node-id">${node.id}</div><span class="node-type ${typeColors[node.type]}">${typeNames[node.type]}</span></div>`;
+  if(node.type === 2) {
+    content += `<div class="node-data"><div class="data-row"><span class="data-label">Движение:</span><span class="data-value">${node.value1==1?'Обнаружено':'Нет'}</span></div></div>`;
+  } else if(node.type === 3) {
+    content += `<div class="node-data">
+      <div class="data-row"><span class="data-label">Реле 1:</span><span class="data-value">${node.relay1_state?'ВКЛ':'ВЫКЛ'}</span></div>
+      <div class="data-row"><span class="data-label">Реле 2:</span><span class="data-value">${node.relay2_state?'ВКЛ':'ВЫКЛ'}</span></div>
+    </div>
+    <div class="relay-control">
+      <button class="relay-btn btn-toggle" onclick="controlNode('${node.id}','toggle',1)">Перекл. 1</button>
+      <button class="relay-btn btn-on" onclick="controlNode('${node.id}','on',1)">ВКЛ 1</button>
+      <button class="relay-btn btn-off" onclick="controlNode('${node.id}','off',1)">ВЫКЛ 1</button>
+    </div>
+    <div class="relay-control">
+      <button class="relay-btn btn-toggle" onclick="controlNode('${node.id}','toggle',2)">Перекл. 2</button>
+      <button class="relay-btn btn-on" onclick="controlNode('${node.id}','on',2)">ВКЛ 2</button>
+      <button class="relay-btn btn-off" onclick="controlNode('${node.id}','off',2)">ВЫКЛ 2</button>
+    </div>`;
+  } else if(node.type === 4) {
+    content += `<div class="node-data"><div class="data-row"><span class="data-label">RGB статус:</span><span class="data-value">${node.value1?'Активен':'Выключен'}</span></div></div>`;
+  } else if(node.type === 5) {
+    content += `<div class="node-data"><div class="data-row"><span class="data-label">Освещенность:</span><span class="data-value">${node.value1.toFixed(1)}%</span></div></div>`;
+  }
+  content += `<div class="node-footer"><div><span class="online-dot ${node.online?'dot-online':'dot-offline'}"></span>${node.online?'Online':'Offline'}</div><div class="last-seen">Обновлено: ${formatTime(node.last_seen)}</div></div>`;
+  div.innerHTML = content;
+  return div;
+}
+function updateNodeCard(nodeId) {
+  const card = document.getElementById(`node-${nodeId}`);
+  if(card && nodes[nodeId]) {
+    const node = nodes[nodeId];
+    const onlineDot = card.querySelector('.online-dot');
+    if(onlineDot) onlineDot.className = `online-dot ${node.online?'dot-online':'dot-offline'}`;
+    const statusText = card.querySelector('.node-footer div:first-child');
+    if(statusText) statusText.innerHTML = `<span class="online-dot ${node.online?'dot-online':'dot-offline'}"></span>${node.online?'Online':'Offline'}`;
+    const lastSeen = card.querySelector('.last-seen');
+    if(lastSeen) lastSeen.textContent = `Обновлено: ${formatTime(node.last_seen)}`;
+    if(node.type === 2) {
+      const motionValue = card.querySelector('.data-value');
+      if(motionValue) motionValue.textContent = node.value1==1?'Обнаружено':'Нет';
+    } else if(node.type === 3) {
+      const relay1 = card.querySelectorAll('.data-value')[0];
+      const relay2 = card.querySelectorAll('.data-value')[1];
+      if(relay1) relay1.textContent = node.relay1_state?'ВКЛ':'ВЫКЛ';
+      if(relay2) relay2.textContent = node.relay2_state?'ВКЛ':'ВЫКЛ';
+    } else if(node.type === 4) {
+      const rgbStatus = card.querySelector('.data-value');
+      if(rgbStatus) rgbStatus.textContent = node.value1?'Активен':'Выключен';
+    } else if(node.type === 5) {
+      const lightValue = card.querySelector('.data-value');
+      if(lightValue) lightValue.textContent = `${node.value1.toFixed(1)}%`;
+    }
+  }
+}
+function controlNode(nodeId, command, relayNum) {
+  if(socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({
+      cmd: "control_node",
+      node_id: nodeId,
+      command: command,
+      relay_num: relayNum
+    }));
+  }
+}
+function formatTime(timestamp) {
+  if(!timestamp) return "никогда";
+  const now = Date.now();
+  const diff = now - timestamp;
+  if(diff < 60000) return "только что";
+  if(diff < 3600000) return `${Math.floor(diff/60000)} мин назад`;
+  if(diff < 86400000) return `${Math.floor(diff/3600000)} ч назад`;
+  return `${Math.floor(diff/86400000)} дн назад`;
+}
+window.onload = function() {
+  connectWebSocket();
+  // Обновление статуса каждые 10 секунд
+  setInterval(() => {
+    if(socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({cmd: "get_nodes"}));
+    }
+  }, 10000);
+};
+</script>
+</body></html>
+)rawliteral";
+
+// ===================== WEB SERVER HANDLERS =====================
+void handleRoot() {
+  server.send(200, "text/html", htmlPage);
+}
+
+void handleNotFound() {
+  server.send(404, "text/plain", "404: Not Found");
+}
+
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+  switch(type) {
+    case WStype_DISCONNECTED:
+      if(DEBUG_MODE) Serial.printf("[%u] Отключен\n", num);
+      break;
+    case WStype_CONNECTED:
+      if(DEBUG_MODE) {
+        IPAddress ip = webSocket.remoteIP(num);
+        Serial.printf("[%u] Подключен от %d.%d.%d.%d\n", num, ip[0], ip[1], ip[2], ip[3]);
+      }
+      sendNodesList(num);
+      break;
+    case WStype_TEXT:
+      processWebSocketCommand(num, payload, length);
+      break;
+  }
+}
+
+void processWebSocketCommand(uint8_t client_num, uint8_t *payload, size_t length) {
+  String message = String((char*)payload).substring(0, length);
+  if(DEBUG_MODE) Serial.printf("Получено: %s\n", message.c_str());
+  
+  DynamicJsonDocument doc(256);
+  DeserializationError error = deserializeJson(doc, message);
+  
+  if(error) {
+    if(DEBUG_MODE) Serial.println("Ошибка JSON");
+    return;
+  }
+  
+  String cmd = doc["cmd"];
+  
+  if(cmd == "get_nodes") {
+    sendNodesList(client_num);
+  }
+  else if(cmd == "control_node") {
+    String node_id = doc["node_id"];
+    String command = doc["command"];
+    int relay_num = doc["relay_num"] | 1;
+    
+    // Здесь будет отправка команды на узел через ESP-NOW (выполняется на Core 1)
+    // Пока просто логируем
+    if(DEBUG_MODE) {
+      Serial.printf("Команда узлу %s: %s реле %d\n", 
+                   node_id.c_str(), command.c_str(), relay_num);
+    }
+    
+    // Отправляем подтверждение
+    String response = "{\"event\":\"command_ack\",\"node_id\":\"" + node_id + 
+                     "\",\"command\":\"" + command + "\",\"relay\":" + String(relay_num) + "}";
+    webSocket.sendTXT(client_num, response);
+  }
+}
+
+void sendNodesList(uint8_t client_num = 255) {
+  String json = "{\"event\":\"nodes_list\",\"nodes\":[";
+  
+  for(int i = 0; i < 4; i++) {
+    if(i > 0) json += ",";
+    json += "{";
+    json += "\"id\":\"" + String(nodes[i].node_id) + "\",";
+    json += "\"type\":" + String(nodes[i].node_type) + ",";
+    json += "\"value1\":" + String(nodes[i].value1, 2) + ",";
+    json += "\"value2\":" + String(nodes[i].value2, 2) + ",";
+    json += "\"relay1_state\":" + String(nodes[i].relay1_state) + ",";
+    json += "\"relay2_state\":" + String(nodes[i].relay2_state) + ",";
+    json += "\"status\":" + String(nodes[i].status) + ",";
+    json += "\"online\":" + String(nodes[i].online ? "true" : "false") + ",";
+    json += "\"last_seen\":" + String(nodes[i].last_seen);
+    json += "}";
+  }
+  
+  json += "]}";
+  
+  if(client_num == 255) {
+    webSocket.broadcastTXT(json);
+  } else {
+    webSocket.sendTXT(client_num, json);
+  }
+}
+
+// ===================== CORE 1: ESP-NOW & NODE LOGIC =====================
+#include <esp_now.h>
+#include <esp_wifi.h>
+
+// Структура для ESP-NOW сообщений
+typedef struct __attribute__((packed)) {
+  char node_id[32];
+  uint8_t node_type;
+  float value1;
+  float value2;
+  uint8_t relay1_state;
+  uint8_t relay2_state;
+  uint8_t status;
+  uint32_t timestamp;
+} espnow_message_t;
+
+// Callback при получении данных от узлов
+void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
+  if(len == sizeof(espnow_message_t)) {
+    espnow_message_t msg;
+    memcpy(&msg, incomingData, sizeof(msg));
+    
+    // Находим индекс узла по MAC
+    int node_index = -1;
+    for(int i = 0; i < 4; i++) {
+      if(memcmp(nodes[i].mac, mac, 6) == 0) {
+        node_index = i;
+        break;
+      }
+    }
+    
+    if(node_index != -1) {
+      // Обновляем данные узла
+      nodes[node_index].value1 = msg.value1;
+      nodes[node_index].value2 = msg.value2;
+      nodes[node_index].relay1_state = msg.relay1_state;
+      nodes[node_index].relay2_state = msg.relay2_state;
+      nodes[node_index].status = msg.status;
+      nodes[node_index].last_seen = millis();
+      nodes[node_index].online = true;
+      
+      // Устанавливаем флаг новых данных
+      newDataAvailable = true;
+      updatedNodeIndex = node_index;
+      
+      if(DEBUG_MODE) {
+        Serial.printf("Данные от %s: v1=%.1f, v2=%.1f, r1=%d, r2=%d\n", 
+                     msg.node_id, msg.value1, msg.value2, 
+                     msg.relay1_state, msg.relay2_state);
+      }
+    }
+  }
+}
+
+// Функция для отправки команд на узлы
+void sendCommandToNode(int node_index, String command, int relay_num) {
+  // Создаем структуру команды для ESP-NOW
+  typedef struct __attribute__((packed)) {
+    char command[16];
+    int relay_num;
+    int value;
+  } node_command_t;
+  
+  node_command_t cmd;
+  
+  if(command == "on") {
+    strcpy(cmd.command, "relay_on");
+    cmd.value = 1;
+  } else if(command == "off") {
+    strcpy(cmd.command, "relay_off");
+    cmd.value = 0;
+  } else if(command == "toggle") {
+    strcpy(cmd.command, "relay_toggle");
+    cmd.value = 0;
+  }
+  
+  cmd.relay_num = relay_num;
+  
+  // Отправляем команду через ESP-NOW
+  esp_now_send(nodes[node_index].mac, (uint8_t*)&cmd, sizeof(cmd));
+}
+
+// ===================== TASK FUNCTIONS FOR EACH CORE =====================
+TaskHandle_t Core0Task;
+TaskHandle_t Core1Task;
+
+void Core0code(void *pvParameters) {
+  // Настройка Wi-Fi в режиме точки доступа
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP("SmartHomeHub", "12345678");
+  
+  if(DEBUG_MODE) {
+    Serial.print("AP IP address: ");
+    Serial.println(WiFi.softAPIP());
+  }
+  
+  // Настройка веб-сервера
+  server.on("/", handleRoot);
+  server.onNotFound(handleNotFound);
+  server.begin();
+  
+  // Настройка WebSocket
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
+  
+  if(DEBUG_MODE) Serial.println("Core 0: Web сервер запущен");
+  
+  // Бесконечный цикл для обработки HTTP и WebSocket
+  for(;;) {
+    server.handleClient();
+    webSocket.loop();
+    
+    // Если есть новые данные от узлов - отправляем обновления клиентам
+    if(newDataAvailable) {
+      String update = "{";
+      update += "\"event\":\"node_update\",";
+      update += "\"id\":\"" + String(nodes[updatedNodeIndex].node_id) + "\",";
+      update += "\"value1\":" + String(nodes[updatedNodeIndex].value1, 2) + ",";
+      update += "\"value2\":" + String(nodes[updatedNodeIndex].value2, 2) + ",";
+      update += "\"relay1_state\":" + String(nodes[updatedNodeIndex].relay1_state) + ",";
+      update += "\"relay2_state\":" + String(nodes[updatedNodeIndex].relay2_state) + ",";
+      update += "\"status\":" + String(nodes[updatedNodeIndex].status);
+      update += "}";
+      
+      webSocket.broadcastTXT(update);
+      newDataAvailable = false;
+    }
+    
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+  }
+}
+
+void Core1code(void *pvParameters) {
+  // Инициализация ESP-NOW
+  if(esp_now_init() != ESP_OK) {
+    if(DEBUG_MODE) Serial.println("Ошибка инициализации ESP-NOW");
+    vTaskDelete(NULL);
+  }
+  
+  // Регистрация callback'а приёма
+  esp_now_register_recv_cb(OnDataRecv);
+  
+  // Добавление пиров (узлов)
+  for(int i = 0; i < 4; i++) {
+    esp_now_peer_info_t peerInfo;
+    memset(&peerInfo, 0, sizeof(peerInfo));
+    memcpy(peerInfo.peer_addr, nodes[i].mac, 6);
+    peerInfo.channel = 1;
+    peerInfo.encrypt = false;
+    
+    if(esp_now_add_peer(&peerInfo) != ESP_OK) {
+      if(DEBUG_MODE) Serial.printf("Ошибка добавления узла %d\n", i);
+    }
+  }
+  
+  if(DEBUG_MODE) Serial.println("Core 1: ESP-NOW инициализирован");
+  
+  // Бесконечный цикл для проверки статуса узлов
+  for(;;) {
+    unsigned long current_time = millis();
+    
+    // Проверяем, какие узлы offline (не было данных более 30 секунд)
+    for(int i = 0; i < 4; i++) {
+      if(nodes[i].online && (current_time - nodes[i].last_seen > 30000)) {
+        nodes[i].online = false;
+        
+        // Отправляем уведомление в WebSocket (через флаг)
+        newDataAvailable = true;
+        updatedNodeIndex = i;
+        
+        if(DEBUG_MODE) Serial.printf("Узел %s отключился\n", nodes[i].node_id.c_str());
+      }
+    }
+    
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  }
+}
+
+// ===================== SETUP & MAIN LOOP =====================
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  
+  if(DEBUG_MODE) {
+    Serial.println("\n=== SMART HOME HUB ESP32-S3 ===\n");
+    Serial.println("Инициализация системы...");
+  }
+  
+  // Инициализация данных узлов
+  // Узел 1 (PIR)
+  memcpy(nodes[0].mac, node_mac_1, 6);
+  nodes[0].node_id = "PIR_Corridor";
+  nodes[0].node_type = 2;
+  nodes[0].relay1_state = 0;
+  nodes[0].relay2_state = 0;
+  nodes[0].online = false;
+  
+  // Узел 2 (Реле)
+  memcpy(nodes[1].mac, node_mac_2, 6);
+  nodes[1].node_id = "Relay_LivingRoom";
+  nodes[1].node_type = 3;
+  nodes[1].relay1_state = 0;
+  nodes[1].relay2_state = 0;
+  nodes[1].online = false;
+  
+  // Узел 3 (RGB)
+  memcpy(nodes[2].mac, node_mac_3, 6);
+  nodes[2].node_id = "RGB_Bedroom";
+  nodes[2].node_type = 4;
+  nodes[2].relay1_state = 0;
+  nodes[2].relay2_state = 0;
+  nodes[2].online = false;
+  
+  // Узел 4 (Датчик света)
+  memcpy(nodes[3].mac, node_mac_4, 6);
+  nodes[3].node_id = "LightSensor";
+  nodes[3].node_type = 5;
+  nodes[3].relay1_state = 0;
+  nodes[3].relay2_state = 0;
+  nodes[3].online = false;
+  
+  // Создание задач для каждого ядра
+  xTaskCreatePinnedToCore(
+    Core0code,   // Функция задачи
+    "Core0_Task",// Имя задачи
+    10000,       // Размер стека
+    NULL,        // Параметры
+    1,           // Приоритет
+    &Core0Task,  // Хэндл задачи
+    0            // Ядро 0
+  );
+  
+  xTaskCreatePinnedToCore(
+    Core1code,   // Функция задачи
+    "Core1_Task",// Имя задачи
+    10000,       // Размер стека
+    NULL,        // Параметры
+    1,           // Приоритет
+    &Core1Task,  // Хэндл задачи
+    1            // Ядро 1
+  );
+  
+  if(DEBUG_MODE) Serial.println("Система запущена на двух ядрах");
+}
+
+void loop() {
+  // Главный цикл не используется, так как задачи работают на разных ядрах
+  vTaskDelete(NULL);
+}
