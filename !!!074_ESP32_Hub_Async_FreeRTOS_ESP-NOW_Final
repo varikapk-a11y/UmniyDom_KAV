@@ -1,0 +1,931 @@
+// ======================================================================
+// НАЗВАНИЕ: 074_ESP32_Hub_Async_FreeRTOS_ESP-NOW_Final.ino
+// ВЕРСИЯ: 1.1 (С предварительной конфигурацией узлов)
+// ======================================================================
+// ОПИСАНИЕ:
+// ХАБ на ESP32-WROOM с гибридной архитектурой:
+// 1. FreeRTOS: Сервер на Core 0, логика на Core 1
+// 2. AsyncWebServer: Веб-интерфейс с кнопками управления узлами
+// 3. ESP-NOW: Двусторонняя связь с множеством узлов
+// 4. WebSocket: Реальное обновление статуса в веб-интерфейсе
+// 5. Предварительная конфигурация известных узлов по MAC-адресам
+// ======================================================================
+
+// ========== ОПТИМИЗАЦИЯ ПАМЯТИ ==========
+#define ASYNC_WEBSERVER_CONNECTIONS 5
+#define ASYNCWEBSERVER_STACK_SIZE 4096
+
+#include <WiFi.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncTCP.h>
+#include <esp_now.h>
+#include <ArduinoJson.h>
+
+// ========== НАСТРОЙКИ СЕТИ ==========
+const char* AP_SSID = "ESP32_Hub_Network";
+const char* AP_PASSWORD = "node12345678";
+
+// ========== ПРЕДВАРИТЕЛЬНАЯ КОНФИГУРАЦИЯ ИЗВЕСТНЫХ УЗЛОВ ==========
+// ДОБАВЬТЕ СЮДА MAC-АДРЕСА ВАШИХ УЗЛОВ ПЕРЕД ПРОШИВКОЙ!
+struct PreconfiguredNode {
+    uint8_t mac[6];      // MAC-адрес узла
+    uint32_t nodeId;     // ID узла (2,3,4,5...)
+    String name;         // Человеческое название
+};
+
+PreconfiguredNode knownNodes[] = {
+    // Формат: {MAC}, ID, "Название"
+    {{0x88, 0x56, 0xA6, 0x7C, 0xF2, 0xA8}, 2, "Узел #2"},  // ESP32-C3 #2
+    {{0x88, 0x56, 0xA6, 0x7D, 0x09, 0x64}, 3, "Узел #3"},  // ESP32-C3 #3
+    {{0x10, 0x00, 0x3B, 0xB1, 0xA6, 0x9C}, 4, "Узел #4"},  // ESP32-C3 #4
+    {{0xAC, 0xEB, 0xE6, 0x49, 0x10, 0x28}, 5, "Узел #5"},  // ESP32-C3 #5
+    // Добавьте сюда новые узлы по мере появления
+    // {{0xXX, 0xXX, 0xXX, 0xXX, 0xXX, 0xXX}, ID, "Название"},
+};
+
+const int KNOWN_NODES_COUNT = sizeof(knownNodes) / sizeof(knownNodes[0]);
+
+// ========== СТРУКТУРЫ ДАННЫХ ==========
+
+// Структура для ESP-NOW сообщений (должна совпадать с узлом!)
+typedef struct esp_now_message {
+    char command[16];      // "LED_ON", "LED_OFF", "ACK_ON", "ACK_OFF", и т.д.
+    uint8_t sender_id;     // ID отправителя
+    uint8_t target_id;     // ID целевого узла (0 = всем)
+} esp_now_message;
+
+// Структура данных узла в хабе
+struct NodeData {
+    // Идентификация
+    String ip;                     // IP адрес (если подключен по Wi-Fi)
+    uint32_t nodeId = 0;           // Уникальный ID узла
+    uint8_t mac[6] = {0};          // MAC адрес узла
+    String name = "Неизвестный";   // Имя узла
+    bool preconfigured = false;    // Узел из предварительной конфигурации
+    bool espNowRegistered = false; // Зарегистрирован в ESP-NOW
+    
+    // Данные датчиков
+    float tempAHT = NAN;
+    float lastTempAHT = NAN;
+    float humAHT = NAN;
+    float tempBMP = NAN;
+    float pressBMP = NAN;
+    int rssi = 0;
+    int chain1 = 0;
+    int chain2 = 0;
+    int chain3 = 0;
+    
+    // Статус и управление
+    unsigned long lastSeen = 0;
+    bool online = false;
+    bool alarmFlag = false;
+    String lastCommand = "";       // Последняя команда узлу
+    String lastAck = "";           // Последнее подтверждение
+    unsigned long lastCommandTime = 0;
+    
+    // Состояние выходов (для отображения в веб-интерфейсе)
+    bool ledState = false;
+    bool relay1State = false;
+    bool relay2State = false;
+};
+
+// ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+NodeData nodes[10];                // Максимум 10 узлов
+int nodeCount = 0;
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");          // WebSocket для реальных обновлений
+TaskHandle_t ServerTaskHandle;
+SemaphoreHandle_t xNodesSemaphore;
+
+// Буферы для ESP-NOW
+esp_now_message outgoingMessage;
+esp_now_message incomingMessage;
+
+// ========== ПРОТОТИПЫ ФУНКЦИЙ ==========
+void registerPreconfiguredNodes();
+String getNodeTableRows();
+String getWebInterface();
+void printNodeToSerial(NodeData &node, bool isEmergency = false);
+int findOrCreateNode(String ip, uint32_t nodeId);
+int findNodeByMac(const uint8_t* mac);
+int findNodeById(uint32_t nodeId);
+void updateWebInterface();
+void sendEspNowCommand(uint32_t targetNodeId, String command);
+void broadcastStatus(String statusText);
+void handleApiStatusRequest(AsyncWebServerRequest *request);
+void handleNotFoundRequest(AsyncWebServerRequest *request);
+void serverTask(void *pvParameters);
+
+// ESP-NOW колбэки
+void onEspNowDataSent(const wifi_tx_info_t *info, esp_now_send_status_t status);
+void onEspNowDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingData, int len);
+
+// Обработчики WebSocket
+void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, 
+                      AwsEventType type, void *arg, uint8_t *data, size_t len);
+
+// ========== SETUP (ЯДРО 1) ==========
+void setup() {
+    Serial.begin(115200);
+    delay(1000);
+
+    // Создаем семафор для защиты общих данных
+    xNodesSemaphore = xSemaphoreCreateMutex();
+    if (xNodesSemaphore == NULL) {
+        Serial.println("❌ Ошибка создания семафора!");
+        while (1) delay(1000);
+    }
+
+    // Настройка Wi-Fi в гибридном режиме AP+STA (для ESP-NOW)
+    WiFi.mode(WIFI_AP_STA);
+    WiFi.setTxPower(WIFI_POWER_8_5dBm);
+
+    Serial.println("\n=== ESP32 ХАБ (FreeRTOS + ESP-NOW + WebSocket) ===");
+    Serial.println("Версия: Гибридная интеграция v1.1");
+    Serial.println("Сервер на Core 0, ESP-NOW логика на Core 1");
+    Serial.print("Известных узлов: ");
+    Serial.println(KNOWN_NODES_COUNT);
+
+    // Запуск точки доступа
+    if (!WiFi.softAP(AP_SSID, AP_PASSWORD)) {
+        Serial.println("❌ Ошибка создания точки доступа!");
+        while (1) delay(1000);
+    }
+
+    Serial.print("IP хаба: ");
+    Serial.println(WiFi.softAPIP());
+    Serial.print("MAC хаба: ");
+    Serial.println(WiFi.softAPmacAddress());
+
+    // ========== ИНИЦИАЛИЗАЦИЯ ESP-NOW ==========
+    if (esp_now_init() != ESP_OK) {
+        Serial.println("❌ Ошибка инициализации ESP-NOW!");
+        while(1) delay(1000);
+    }
+    
+    // Регистрация колбэков ESP-NOW
+    esp_now_register_send_cb(onEspNowDataSent);
+    esp_now_register_recv_cb(onEspNowDataRecv);
+    
+    Serial.println("✅ ESP-NOW инициализирован");
+
+    // ========== РЕГИСТРАЦИЯ ПРЕДНАСТРОЕННЫХ УЗЛОВ ==========
+    registerPreconfiguredNodes();
+	    // ========== НАСТРОЙКА WEB-ИНТЕРФЕЙСА ==========
+    
+    // Главная страница с кнопками управления
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(200, "text/html", getWebInterface());
+    });
+
+    // API для таблицы узлов (AJAX)
+    server.on("/api/table", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
+            String tableRows = getNodeTableRows();
+            xSemaphoreGive(xNodesSemaphore);
+            request->send(200, "text/html", tableRows);
+        } else {
+            request->send(503, "text/plain", "Service Unavailable");
+        }
+    });
+
+    // API для отправки команд узлам
+    server.on("/api/command", HTTP_POST, [](AsyncWebServerRequest *request) {
+        if (request->hasParam("nodeId", true) && request->hasParam("command", true)) {
+            String nodeIdStr = request->getParam("nodeId", true)->value();
+            String command = request->getParam("command", true)->value();
+            
+            uint32_t nodeId = nodeIdStr.toInt();
+            
+            if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
+                sendEspNowCommand(nodeId, command);
+                xSemaphoreGive(xNodesSemaphore);
+                
+                JsonDocument resp;
+                resp["status"] = "ok";
+                resp["message"] = "Команда отправлена узлу " + String(nodeId);
+                String response;
+                serializeJson(resp, response);
+                request->send(200, "application/json", response);
+            }
+        } else {
+            request->send(400, "text/plain", "Missing parameters");
+        }
+    });
+
+    // Прием данных от узлов по HTTP (POST /data)
+    server.on("/data", HTTP_POST, 
+        [](AsyncWebServerRequest *request) {},
+        NULL,
+        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            if (index == 0 && len > 0) {
+                String body = String((char*)data, len);
+                String clientIP = request->client()->remoteIP().toString();
+                
+                JsonDocument doc;
+                DeserializationError error = deserializeJson(doc, body);
+                if (error) {
+                    request->send(400, "text/plain", "JSON error");
+                    return;
+                }
+                
+                uint32_t nodeId = doc["nodeId"] | 0;
+                
+                if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
+                    int idx = findOrCreateNode(clientIP, nodeId);
+                    
+                    if (idx != -1) {
+                        // Обновление данных узла
+                        nodes[idx].lastTempAHT = nodes[idx].tempAHT;
+                        nodes[idx].tempAHT = doc["tempAHT"] | NAN;
+                        nodes[idx].humAHT = doc["humAHT"] | NAN;
+                        nodes[idx].tempBMP = doc["tempBMP"] | NAN;
+                        nodes[idx].pressBMP = doc["pressBMP"] | NAN;
+                        nodes[idx].rssi = doc["rssi"] | 0;
+                        nodes[idx].chain1 = doc["chain1"] | 0;
+                        nodes[idx].chain2 = doc["chain2"] | 0;
+                        nodes[idx].chain3 = doc["chain3"] | 0;
+                        nodes[idx].lastSeen = millis();
+                        nodes[idx].online = true;
+                        
+                        printNodeToSerial(nodes[idx], false);
+                        updateWebInterface();
+                    }
+                    xSemaphoreGive(xNodesSemaphore);
+                }
+                
+                JsonDocument resp;
+                resp["status"] = "ok";
+                String response;
+                serializeJson(resp, response);
+                request->send(200, "application/json", response);
+            }
+        }
+    );
+
+    // Прием аварийных сообщений
+    server.on("/emergency", HTTP_POST,
+        [](AsyncWebServerRequest *request) {},
+        NULL,
+        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            if (index == 0 && len > 0) {
+                String body = String((char*)data, len);
+                String clientIP = request->client()->remoteIP().toString();
+                
+                JsonDocument doc;
+                DeserializationError error = deserializeJson(doc, body);
+                if (error) return;
+                
+                uint32_t nodeId = doc["nodeId"] | 0;
+                int chain1 = doc["chain1"] | 0;
+                int chain2 = doc["chain2"] | 0;
+                int chain3 = doc["chain3"] | 0;
+                
+                if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
+                    int idx = findNodeById(nodeId);
+                    if (idx == -1) idx = findOrCreateNode(clientIP, nodeId);
+                    
+                    if (idx != -1) {
+                        nodes[idx].chain1 = chain1;
+                        nodes[idx].chain2 = chain2;
+                        nodes[idx].chain3 = chain3;
+                        nodes[idx].lastSeen = millis();
+                        nodes[idx].online = true;
+                        nodes[idx].alarmFlag = true;
+                        
+                        Serial.print("🚨 АВАРИЯ: ");
+                        Serial.print(nodes[idx].name);
+                        Serial.print(" цепи:[");
+                        Serial.print(chain1);
+                        Serial.print(",");
+                        Serial.print(chain2);
+                        Serial.print(",");
+                        Serial.print(chain3);
+                        Serial.println("]");
+                        
+                        updateWebInterface();
+                    }
+                    xSemaphoreGive(xNodesSemaphore);
+                }
+                
+                request->send(200, "text/plain", "emergency received");
+            }
+        }
+    );
+
+    // API статуса (JSON)
+    server.on("/api/status", HTTP_GET, handleApiStatusRequest);
+    
+    // Обработка 404
+    server.onNotFound(handleNotFoundRequest);
+
+    // Настройка WebSocket
+    ws.onEvent(onWebSocketEvent);
+    server.addHandler(&ws);
+
+    // ========== СОЗДАНИЕ ЗАДАЧИ ДЛЯ СЕРВЕРА НА ЯДРЕ 0 ==========
+    xTaskCreatePinnedToCore(
+        serverTask,
+        "AsyncWebServer",
+        ASYNCWEBSERVER_STACK_SIZE,
+        NULL,
+        1,
+        &ServerTaskHandle,
+        0
+    );
+
+    Serial.println("✅ Задача сервера создана на Core 0");
+    Serial.println("✅ Хаб готов к работе (Wi-Fi + ESP-NOW)\n");
+}
+
+// ========== ФУНКЦИЯ РЕГИСТРАЦИИ ПРЕДНАСТРОЕННЫХ УЗЛОВ ==========
+void registerPreconfiguredNodes() {
+    Serial.println("📋 Регистрация предварительно настроенных узлов:");
+    
+    for (int i = 0; i < KNOWN_NODES_COUNT; i++) {
+        // 1. Добавляем узел в ESP-NOW пиры
+        esp_now_peer_info_t peerInfo = {};
+        memcpy(peerInfo.peer_addr, knownNodes[i].mac, 6);
+        peerInfo.channel = 0;
+        peerInfo.encrypt = false;
+        
+        if (esp_now_add_peer(&peerInfo) == ESP_OK) {
+            // 2. Добавляем узел в нашу внутреннюю базу
+            if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
+                if (nodeCount < 10) {
+                    int idx = nodeCount;
+                    memcpy(nodes[idx].mac, knownNodes[i].mac, 6);
+                    nodes[idx].nodeId = knownNodes[i].nodeId;
+                    nodes[idx].name = knownNodes[i].name;
+                    nodes[idx].preconfigured = true;
+                    nodes[idx].espNowRegistered = true;
+                    nodes[idx].lastSeen = 0;
+                    nodes[idx].online = false;
+                    nodeCount++;
+                    
+                    Serial.print("  ✅ ");
+                    Serial.print(knownNodes[i].name);
+                    Serial.print(" (ID:");
+                    Serial.print(knownNodes[i].nodeId);
+                    Serial.print(") MAC:");
+                    for(int j=0; j<6; j++) {
+                        Serial.print(knownNodes[i].mac[j], HEX);
+                        if(j<5) Serial.print(":");
+                    }
+                    Serial.println();
+                } else {
+                    Serial.print("  ❌ Лимит узлов! Не добавлен: ");
+                    Serial.println(knownNodes[i].name);
+                }
+                xSemaphoreGive(xNodesSemaphore);
+            }
+        } else {
+            Serial.print("  ❌ Ошибка ESP-NOW для ");
+            Serial.println(knownNodes[i].name);
+        }
+    }
+    Serial.println("📋 Всего зарегистрировано узлов: " + String(nodeCount));
+}
+
+// ========== ЗАДАЧА СЕРВЕРА (ЯДРО 0) ==========
+void serverTask(void *pvParameters) {
+    Serial.print("Задача сервера запущена на ядре: ");
+    Serial.println(xPortGetCoreID());
+    
+    server.begin();
+    
+    for(;;) {
+        ws.cleanupClients(); // Очистка неактивных WebSocket клиентов
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+// ========== LOOP (ЯДРО 1) ==========
+void loop() {
+    // Проверка онлайн-статуса узлов
+    static unsigned long lastStatusCheck = 0;
+    if (millis() - lastStatusCheck > 30000) {
+        lastStatusCheck = millis();
+        
+        if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
+            for (int i = 0; i < nodeCount; i++) {
+                bool wasOnline = nodes[i].online;
+                nodes[i].online = (millis() - nodes[i].lastSeen < 60000);
+                
+                // Если статус изменился - обновляем веб-интерфейс
+                if (wasOnline != nodes[i].online) {
+                    updateWebInterface();
+                }
+            }
+            xSemaphoreGive(xNodesSemaphore);
+            
+            // Диагностика памяти
+            static int logCounter = 0;
+            if (++logCounter % 5 == 0) {
+                Serial.printf("[MEM] Свободно: %.1f KB | Min: %.1f KB\n", 
+                    ESP.getFreeHeap() / 1024.0, 
+                    ESP.getMinFreeHeap() / 1024.0);
+            }
+        }
+    }
+    
+    delay(100);
+}
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+
+// Генерация веб-интерфейса
+String getWebInterface() {
+    String html = R"rawliteral(
+<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ESP32 Хаб - Управление узлами</title>
+<style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+    .container { max-width: 1400px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+    .alarm-row { background-color: #ffeeee !important; border-left: 5px solid #e74c3c; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background: #3498db; color: white; }
+    .online { color: #27ae60; font-weight: bold; }
+    .offline { color: #e74c3c; font-weight: bold; }
+    .command-btn { padding: 6px 12px; margin: 2px; border: none; border-radius: 4px; cursor: pointer; }
+    .btn-on { background: #4CAF50; color: white; }
+    .btn-off { background: #f44336; color: white; }
+    .btn-relay { background: #2196F3; color: white; }
+    .update-info { font-size: 0.9em; color: #7f8c8d; text-align: right; margin-top: 10px; }
+    .status-ack { font-size: 0.8em; color: #666; margin-top: 3px; }
+    .led-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+    .led-on { background-color: #4CAF50; box-shadow: 0 0 8px #4CAF50; }
+    .led-off { background-color: #ccc; }
+</style>
+<script>
+const ws = new WebSocket('ws://' + window.location.hostname + '/ws');
+ws.onopen = function() {
+    console.log('WebSocket connected');
+    updateTable();
+};
+ws.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    if(data.type === 'status') {
+        updateStatus(data);
+    } else if(data.type === 'table_update') {
+        document.getElementById('nodes-tbody').innerHTML = data.html;
+        document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+        document.getElementById('node-count').textContent = document.querySelectorAll('#nodes-tbody tr').length;
+    }
+};
+function sendCommand(nodeId, command) {
+    fetch('/api/command', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'nodeId=' + nodeId + '&command=' + command
+    }).then(r => r.json()).then(data => {
+        console.log('Command sent:', data);
+    });
+}
+function updateTable() {
+    fetch('/api/table')
+        .then(r => r.text())
+        .then(html => {
+            document.getElementById('nodes-tbody').innerHTML = html;
+            document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+            document.getElementById('node-count').textContent = document.querySelectorAll('#nodes-tbody tr').length;
+        });
+}
+function updateStatus(data) {
+    console.log('Status update:', data);
+}
+setInterval(updateTable, 10000);
+</script>
+</head><body>
+<div class="container">
+    <h1>📶 ESP32 Хаб - Управление узлами (ESP-NOW + WebSocket)</h1>
+    <p><strong>Сеть:</strong> )rawliteral";
+    html += AP_SSID;
+    html += R"rawliteral( | <strong>IP:</strong> )rawliteral";
+    html += WiFi.softAPIP().toString();
+    html += R"rawliteral( | <strong>Узлов:</strong> <span id="node-count">0</span></p>
+    <hr>
+    <table>
+        <thead><tr>
+            <th>Узел</th><th>Статус</th><th>Датчики</th><th>Цепи</th>
+            <th>Управление</th><th>RSSI</th><th>Обновлено</th>
+        </tr></thead>
+        <tbody id="nodes-tbody"><tr><td colspan="7">Загрузка...</td></tbody>
+    </table>
+    <div class="update-info">Обновлено: <span id="last-update">--:--:--</span></div>
+</div>
+</body></html>
+)rawliteral";
+    return html;
+}
+
+// Генерация строк таблицы узлов
+String getNodeTableRows() {
+    if (nodeCount == 0) {
+        return "<tr><td colspan='7' style='text-align:center;'>⏳ Нет активных узлов</td></tr>";
+    }
+    
+    String rowsHTML = "";
+    for (int i = 0; i < nodeCount; i++) {
+        String rowClass = nodes[i].alarmFlag ? "class='alarm-row'" : "";
+        String status = nodes[i].online ? 
+            "<span class='online'>● ONLINE</span>" : 
+            "<span class='offline'>● OFFLINE</span>";
+        
+        // Данные датчиков
+        String sensors = "";
+        if (!isnan(nodes[i].tempAHT)) {
+            sensors += "AHT: " + String(nodes[i].tempAHT,1) + "°C " + 
+                      String(nodes[i].humAHT,1) + "%<br>";
+        }
+        if (!isnan(nodes[i].tempBMP)) {
+            sensors += "BMP: " + String(nodes[i].tempBMP,1) + "°C " +
+                      String(nodes[i].pressBMP,1) + "мм";
+        }
+        if (sensors == "") sensors = "Нет данных";
+        
+        // Состояние цепей
+        String chains = "<span style='color:" + String(nodes[i].chain1==0?"#27ae60":"#e74c3c") + 
+                       "'>1:" + (nodes[i].chain1==0?"OK":"AL") + "</span> ";
+        chains += "<span style='color:" + String(nodes[i].chain2==0?"#27ae60":"#e74c3c") + 
+                 "'>2:" + (nodes[i].chain2==0?"OK":"AL") + "</span> ";
+        chains += "<span style='color:" + String(nodes[i].chain3==0?"#27ae60":"#e74c3c") + 
+                 "'>3:" + (nodes[i].chain3==0?"OK":"AL") + "</span>";
+        
+        // Кнопки управления и индикаторы состояния
+        String controls = "<div>";
+        
+        // Индикатор LED
+        controls += "<span class='led-indicator " + String(nodes[i].ledState?"led-on":"led-off") + "'></span>";
+        controls += "<button class='command-btn " + String(nodes[i].ledState?"btn-off":"btn-on") + 
+                   "' onclick='sendCommand(" + String(nodes[i].nodeId) + ", \"" + 
+                   (nodes[i].ledState?"LED_OFF":"LED_ON") + "\")'>" + 
+                   (nodes[i].ledState?"LED ВЫКЛ":"LED ВКЛ") + "</button>";
+        
+        controls += "<br>";
+        
+        // Кнопки реле
+        controls += "<button class='command-btn btn-relay' onclick='sendCommand(" + 
+                   String(nodes[i].nodeId) + ", \"RELAY_1_ON\")'>РЕЛЕ 1 ВКЛ</button>";
+        controls += "<button class='command-btn btn-relay' onclick='sendCommand(" + 
+                   String(nodes[i].nodeId) + ", \"RELAY_1_OFF\")'>РЕЛЕ 1 ВЫКЛ</button>";
+        
+        controls += "</div>";
+        
+        // Статус последней команды
+        if (nodes[i].lastAck != "") {
+            controls += "<div class='status-ack'>" + nodes[i].lastAck + "</div>";
+        }
+        
+        // Время последнего обновления
+        unsigned long secAgo = (millis() - nodes[i].lastSeen) / 1000;
+        String timeText;
+        if (secAgo < 60) {
+            timeText = String(secAgo) + " сек";
+        } else if (secAgo < 3600) {
+            timeText = String(secAgo / 60) + " мин";
+        } else {
+            timeText = String(secAgo / 3600) + " ч";
+        }
+        
+        // Формирование строки
+        rowsHTML += "<tr " + rowClass + ">";
+        rowsHTML += "<td><strong>" + nodes[i].name + "</strong><br>";
+        rowsHTML += "<small>ID: " + String(nodes[i].nodeId) + " | ";
+        rowsHTML += "MAC: ";
+        for(int j=0; j<6; j++) {
+            rowsHTML += String(nodes[i].mac[j], HEX);
+            if(j<5) rowsHTML += ":";
+        }
+        rowsHTML += "</small></td>";
+        rowsHTML += "<td>" + status + "</td>";
+        rowsHTML += "<td>" + sensors + "</td>";
+        rowsHTML += "<td>" + chains + "</td>";
+        rowsHTML += "<td>" + controls + "</td>";
+        rowsHTML += "<td>" + String(nodes[i].rssi) + " dBm</td>";
+        rowsHTML += "<td>" + timeText + " назад</td>";
+        rowsHTML += "</tr>";
+    }
+    return rowsHTML;
+}
+
+// Обновление веб-интерфейса через WebSocket
+void updateWebInterface() {
+    if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
+        String tableRows = getNodeTableRows();
+        xSemaphoreGive(xNodesSemaphore);
+        
+        JsonDocument doc;
+        doc["type"] = "table_update";
+        doc["html"] = tableRows;
+        
+        String jsonResponse;
+        serializeJson(doc, jsonResponse);
+        ws.textAll(jsonResponse);
+    }
+}
+
+// Отправка команды узлу по ESP-NOW
+void sendEspNowCommand(uint32_t targetNodeId, String command) {
+    int nodeIndex = findNodeById(targetNodeId);
+    if (nodeIndex == -1) {
+        Serial.print("❌ Узел ID ");
+        Serial.print(targetNodeId);
+        Serial.println(" не найден!");
+        return;
+    }
+    
+    // Заполняем структуру команды
+    strncpy(outgoingMessage.command, command.c_str(), sizeof(outgoingMessage.command)-1);
+    outgoingMessage.sender_id = 0; // ID хаба
+    outgoingMessage.target_id = targetNodeId;
+    
+    if (nodes[nodeIndex].espNowRegistered) {
+        esp_err_t result = esp_now_send(nodes[nodeIndex].mac, 
+                                       (uint8_t *) &outgoingMessage, 
+                                       sizeof(outgoingMessage));
+        
+        if (result == ESP_OK) {
+            Serial.print("📡 Команда '");
+            Serial.print(command);
+            Serial.print("' отправлена ");
+            Serial.print(nodes[nodeIndex].name);
+            Serial.print(" (ID:");
+            Serial.print(targetNodeId);
+            Serial.println(")");
+            
+            // Обновляем статус узла
+            nodes[nodeIndex].lastCommand = command;
+            nodes[nodeIndex].lastCommandTime = millis();
+            
+            // Предустанавливаем ожидаемое состояние
+            if (command == "LED_ON") nodes[nodeIndex].ledState = true;
+            else if (command == "LED_OFF") nodes[nodeIndex].ledState = false;
+            else if (command == "RELAY_1_ON") nodes[nodeIndex].relay1State = true;
+            else if (command == "RELAY_1_OFF") nodes[nodeIndex].relay1State = false;
+            
+            updateWebInterface(); // Быстрое обновление интерфейса
+        } else {
+            Serial.print("❌ Ошибка отправки ESP-NOW: ");
+            Serial.println(result);
+        }
+    } else {
+        Serial.print("⚠️ ");
+        Serial.print(nodes[nodeIndex].name);
+        Serial.println(" не зарегистрирован в ESP-NOW");
+    }
+}
+
+// Колбэк подтверждения отправки ESP-NOW
+void onEspNowDataSent(const wifi_tx_info_t *info, esp_now_send_status_t status) {
+    Serial.print("✉️ Доставка ESP-NOW: ");
+    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Успех" : "Ошибка");
+}
+
+// Колбэк приема данных по ESP-NOW
+void onEspNowDataRecv(const esp_now_recv_info_t *recv_info, 
+                     const uint8_t *incomingData, int len) {
+    const uint8_t *senderMac = recv_info->src_addr;
+    memcpy(&incomingMessage, incomingData, min(len, (int)sizeof(incomingMessage)));
+    
+    // Поиск узла по MAC
+    int nodeIndex = findNodeByMac(senderMac);
+    
+    if (nodeIndex == -1) {
+        // Новый узел - регистрируем
+        if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
+            if (nodeCount < 10) {
+                nodeIndex = nodeCount;
+                memcpy(nodes[nodeIndex].mac, senderMac, 6);
+                nodes[nodeIndex].nodeId = incomingMessage.sender_id;
+                nodes[nodeIndex].name = "Узел #" + String(incomingMessage.sender_id);
+                nodes[nodeIndex].espNowRegistered = true;
+                nodes[nodeIndex].lastSeen = millis();
+                nodes[nodeIndex].online = true;
+                nodeCount++;
+                
+                // Регистрация в ESP-NOW
+                esp_now_peer_info_t peerInfo = {};
+                memcpy(peerInfo.peer_addr, senderMac, 6);
+                peerInfo.channel = 0;
+                peerInfo.encrypt = false;
+                esp_now_add_peer(&peerInfo);
+                
+                Serial.print("🔗 Новый узел зарегистрирован: ");
+                Serial.print(nodes[nodeIndex].name);
+                Serial.print(" MAC:");
+                for(int i=0; i<6; i++) {
+                    Serial.print(senderMac[i], HEX);
+                    if(i<5) Serial.print(":");
+                }
+                Serial.println();
+                
+                updateWebInterface();
+            }
+            xSemaphoreGive(xNodesSemaphore);
+        }
+    }
+    
+    // Обработка подтверждений от узлов
+    if (nodeIndex != -1) {
+        if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
+            nodes[nodeIndex].lastSeen = millis();
+            nodes[nodeIndex].online = true;
+            
+            // Обновляем состояние по подтверждениям
+            if (strcmp(incomingMessage.command, "ACK_ON") == 0) {
+                nodes[nodeIndex].ledState = true;
+                nodes[nodeIndex].lastAck = "LED ВКЛ (" + String(millis() - nodes[nodeIndex].lastCommandTime) + "мс)";
+                Serial.print("✅ ");
+                Serial.print(nodes[nodeIndex].name);
+                Serial.println(": LED ВКЛЮЧЕН");
+                
+            } else if (strcmp(incomingMessage.command, "ACK_OFF") == 0) {
+                nodes[nodeIndex].ledState = false;
+                nodes[nodeIndex].lastAck = "LED ВЫКЛ (" + String(millis() - nodes[nodeIndex].lastCommandTime) + "мс)";
+                Serial.print("✅ ");
+                Serial.print(nodes[nodeIndex].name);
+                Serial.println(": LED ВЫКЛЮЧЕН");
+                
+            } else if (strcmp(incomingMessage.command, "ACK_RELAY1_ON") == 0) {
+                nodes[nodeIndex].relay1State = true;
+                nodes[nodeIndex].lastAck = "РЕЛЕ 1 ВКЛ (" + String(millis() - nodes[nodeIndex].lastCommandTime) + "мс)";
+                Serial.print("✅ ");
+                Serial.print(nodes[nodeIndex].name);
+                Serial.println(": РЕЛЕ 1 ВКЛЮЧЕНО");
+                
+            } else if (strcmp(incomingMessage.command, "ACK_RELAY1_OFF") == 0) {
+                nodes[nodeIndex].relay1State = false;
+                nodes[nodeIndex].lastAck = "РЕЛЕ 1 ВЫКЛ (" + String(millis() - nodes[nodeIndex].lastCommandTime) + "мс)";
+                Serial.print("✅ ");
+                Serial.print(nodes[nodeIndex].name);
+                Serial.println(": РЕЛЕ 1 ВЫКЛЮЧЕНО");
+            }
+            
+            xSemaphoreGive(xNodesSemaphore);
+            updateWebInterface();
+        }
+    }
+}
+
+// Поиск узла по MAC адресу
+int findNodeByMac(const uint8_t* mac) {
+    for (int i = 0; i < nodeCount; i++) {
+        if (memcmp(nodes[i].mac, mac, 6) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+// Поиск узла по ID
+int findNodeById(uint32_t nodeId) {
+    for (int i = 0; i < nodeCount; i++) {
+        if (nodes[i].nodeId == nodeId) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+// Поиск или создание узла по IP и ID
+int findOrCreateNode(String ip, uint32_t nodeId) {
+    // Сначала ищем по ID
+    for (int i = 0; i < nodeCount; i++) {
+        if (nodes[i].nodeId == nodeId) {
+            nodes[i].ip = ip;
+            return i;
+        }
+    }
+    
+    // Затем ищем по IP
+    for (int i = 0; i < nodeCount; i++) {
+        if (nodes[i].ip == ip) {
+            nodes[i].nodeId = nodeId;
+            return i;
+        }
+    }
+    
+    // Создаем новый узел
+    if (nodeCount < 10) {
+        int idx = nodeCount;
+        nodes[idx].ip = ip;
+        nodes[idx].nodeId = nodeId;
+        nodes[idx].name = "Узел #" + String(nodeId);
+        nodes[idx].lastSeen = millis();
+        nodes[idx].online = true;
+        nodeCount++;
+        
+        Serial.print("📡 Новый узел (HTTP): ");
+        Serial.print(ip);
+        Serial.print(" ID:");
+        Serial.println(nodeId);
+        
+        return idx;
+    }
+    
+    Serial.println("⚠️ Достигнут лимит узлов (10)!");
+    return -1;
+}
+
+// Вывод информации об узле в Serial
+void printNodeToSerial(NodeData &node, bool isEmergency) {
+    Serial.print(isEmergency ? "🚨 АВАРИЯ: " : "📊 ");
+    Serial.print(node.name);
+    Serial.print(" (ID:");
+    Serial.print(node.nodeId);
+    Serial.print(") | ");
+    
+    if (!isnan(node.tempAHT)) {
+        Serial.print("AHT:");
+        Serial.print(node.tempAHT,1);
+        Serial.print("C/");
+        Serial.print(node.humAHT,1);
+        Serial.print("% ");
+    }
+    
+    if (!isnan(node.tempBMP)) {
+        Serial.print("BMP:");
+        Serial.print(node.tempBMP,1);
+        Serial.print("C/");
+        Serial.print(node.pressBMP,1);
+        Serial.print("mmHg ");
+    }
+    
+    Serial.print("Цепи:[");
+    Serial.print(node.chain1);
+    Serial.print(",");
+    Serial.print(node.chain2);
+    Serial.print(",");
+    Serial.print(node.chain3);
+    Serial.print("] RSSI:");
+    Serial.print(node.rssi);
+    Serial.println("dBm");
+}
+
+// Обработчик API статуса
+void handleApiStatusRequest(AsyncWebServerRequest *request) {
+    JsonDocument doc;
+    JsonArray nodesArray = doc["nodes"].to<JsonArray>();
+    
+    if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
+        for (int i = 0; i < nodeCount; i++) {
+            JsonObject nodeObj = nodesArray.add<JsonObject>();
+            nodeObj["name"] = nodes[i].name;
+            nodeObj["nodeId"] = nodes[i].nodeId;
+            nodeObj["online"] = nodes[i].online;
+            nodeObj["ip"] = nodes[i].ip;
+            nodeObj["tempAHT"] = nodes[i].tempAHT;
+            nodeObj["humAHT"] = nodes[i].humAHT;
+            nodeObj["tempBMP"] = nodes[i].tempBMP;
+            nodeObj["pressBMP"] = nodes[i].pressBMP;
+            nodeObj["chain1"] = nodes[i].chain1;
+            nodeObj["chain2"] = nodes[i].chain2;
+            nodeObj["chain3"] = nodes[i].chain3;
+            nodeObj["rssi"] = nodes[i].rssi;
+            nodeObj["alarmFlag"] = nodes[i].alarmFlag;
+            nodeObj["ledState"] = nodes[i].ledState;
+            nodeObj["relay1State"] = nodes[i].relay1State;
+            nodeObj["lastSeen"] = nodes[i].lastSeen;
+        }
+        xSemaphoreGive(xNodesSemaphore);
+    }
+    
+    doc["hub"]["freeHeap"] = ESP.getFreeHeap();
+    doc["hub"]["uptime"] = millis();
+    doc["hub"]["nodeCount"] = nodeCount;
+    
+    String response;
+    serializeJson(doc, response);
+    request->send(200, "application/json", response);
+}
+
+// Обработчик 404
+void handleNotFoundRequest(AsyncWebServerRequest *request) {
+    request->send(404, "text/plain", "404: Not Found");
+}
+
+// Обработчик событий WebSocket
+void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, 
+                      AwsEventType type, void *arg, uint8_t *data, size_t len) {
+    if (type == WS_EVT_DATA) {
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, data, len);
+        if (!error && doc.containsKey("command") && doc.containsKey("nodeId")) {
+            String cmd = doc["command"].as<String>();
+            uint32_t nodeId = doc["nodeId"];
+            
+            if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
+                sendEspNowCommand(nodeId, cmd);
+                xSemaphoreGive(xNodesSemaphore);
+            }
+        }
+    }
+}
+
+// ======================================================================
+// КОНЕЦ СКЕТЧА ХАБА
+// ======================================================================
