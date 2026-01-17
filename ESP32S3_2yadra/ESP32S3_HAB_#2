@@ -1,8 +1,8 @@
 // ======================================================================
-// ESP32-S3 SMART HUB (FINAL WORKING VERSION)
-// Версия: 2.0 - FreeRTOS + AsyncWebServer + ESP-NOW + WebSocket
-// Автор: Optimized from UmniyDom_KAV project
-// Дата: 2024
+// ESP32-S3 SMART HUB (FINAL WORKING VERSION - COMPATIBLE WITH ESP32 CORE 3.3.5+)
+// Версия: 2.3 - FreeRTOS + AsyncWebServer + ESP-NOW + WebSocket
+// Исправлены ВСЕ ошибки компиляции из файла "Ошибки"
+// Адаптировано под ESP-NOW API версии ESP-IDF v5.5
 // ======================================================================
 
 // ===================== БИБЛИОТЕКИ =====================
@@ -15,8 +15,7 @@
 // ===================== КОНФИГУРАЦИЯ =====================
 #define DEBUG_MODE true
 #define MAX_NODES 10
-#define NODE_TIMEOUT_MS 30000  // 30 секунд для оффлайна
-#define WS_RECONNECT_INTERVAL 5000
+#define NODE_TIMEOUT_MS 30000
 
 // ===================== СТРУКТУРЫ КОНФИГУРАЦИИ =====================
 struct PreconfiguredNode {
@@ -26,32 +25,28 @@ struct PreconfiguredNode {
     uint8_t nodeType;  // 2=PIR, 3=RELAY, 4=RGB, 5=LIGHT_SENSOR
 };
 
-// ВАШИ УЗЛЫ
 PreconfiguredNode knownNodes[] = {
-    {{0x88, 0x56, 0xA6, 0x7C, 0xF2, 0xA8}, 2, "Uzel_2", 2},  // PIR + реле
-    {{0x88, 0x56, 0xA6, 0x7D, 0x09, 0x64}, 3, "Uzel_3", 3},  // Реле модуль
-    {{0x10, 0x00, 0x3B, 0xB1, 0xA6, 0x9C}, 4, "Uzel_4", 4},  // RGB свет
-    {{0xAC, 0xEB, 0xE6, 0x49, 0x10, 0x28}, 5, "Uzel_5", 5}   // Датчик света
+    {{0x88, 0x56, 0xA6, 0x7C, 0xF2, 0xA8}, 2, "Uzel_2", 2},
+    {{0x88, 0x56, 0xA6, 0x7D, 0x09, 0x64}, 3, "Uzel_3", 3},
+    {{0x10, 0x00, 0x3B, 0xB1, 0xA6, 0x9C}, 4, "Uzel_4", 4},
+    {{0xAC, 0xEB, 0xE6, 0x49, 0x10, 0x28}, 5, "Uzel_5", 5}
 };
 
 const int KNOWN_NODES_COUNT = sizeof(knownNodes) / sizeof(knownNodes[0]);
 
 // ===================== СТРУКТУРА ДАННЫХ УЗЛА =====================
 struct NodeData {
-    // Идентификация
     uint8_t mac[6] = {0};
     uint32_t nodeId = 0;
     String name = "Unknown";
     uint8_t nodeType = 0;
     String ip = "0.0.0.0";
     
-    // Статус
     bool preconfigured = false;
     bool espNowRegistered = false;
     bool online = false;
     bool alarmFlag = false;
     
-    // Данные датчиков
     float value1 = 0.0;
     float value2 = 0.0;
     uint8_t relay1_state = 0;
@@ -60,15 +55,12 @@ struct NodeData {
     int rssi = 0;
     int freeHeap = 0;
     
-    // Время
     unsigned long lastSeen = 0;
     unsigned long lastCommandTime = 0;
     
-    // Команды
     String lastCommand = "";
     String lastAck = "";
     
-    // Состояние выходов (для веба)
     bool ledState = false;
     bool relay1State = false;
     bool relay2State = false;
@@ -79,19 +71,16 @@ NodeData nodes[MAX_NODES];
 int nodeCount = 0;
 SemaphoreHandle_t xNodesSemaphore;
 
-// Сеть
 const char* AP_SSID = "ESP32-S3-Hub";
 const char* AP_PASSWORD = "smart12345678";
 
-// Веб-сервер
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
-// ESP-NOW структуры
 #pragma pack(push, 1)
 struct EspNowMessage {
     uint32_t sender_id;
-    uint8_t command_type;  // 1=данные, 2=команда, 3=подтверждение
+    uint8_t command_type;
     float value1;
     float value2;
     uint8_t relay1_state;
@@ -102,40 +91,28 @@ struct EspNowMessage {
 #pragma pack(pop)
 
 // ===================== ПРОТОТИПЫ ФУНКЦИЙ =====================
-// Инициализация
 void setupWiFiAP();
 void setupESP_NOW();
 void registerPreconfiguredNodes();
 void setupAsyncWebServer();
-
-// Работа с узлами
 int findNodeByMac(const uint8_t* mac);
 int findNodeById(uint32_t nodeId);
 void updateNodeData(int index, const EspNowMessage* msg, int rssi);
 void checkNodeTimeouts();
-
-// Отправка данных
 bool sendEspNowCommand(uint32_t nodeId, uint8_t commandType, float val1 = 0, float val2 = 0);
 void sendWebSocketUpdate(int nodeIndex);
 void broadcastSystemStatus();
-
-// JSON
 String getNodesJSON();
 String getNodeJSON(int index);
-
-// WebSocket
 void onWebSocketEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, 
                      AwsEventType type, void* arg, uint8_t* data, size_t len);
 
-// ESP-NOW колбэки
-void OnDataSent(const uint8_t* mac_addr, esp_now_send_status_t status);
-void OnDataRecv(const uint8_t* mac_addr, const uint8_t* incomingData, int len);
+// КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Новые прототипы для ESP-NOW API v5.5
+void OnDataSent(const esp_now_send_info_t *send_info, esp_now_send_status_t status);
+void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t* incomingData, int len);
 
-// FreeRTOS задачи
 void Task_WebServer(void* pvParameters);
 void Task_ESPNowLogic(void* pvParameters);
-
-// Вспомогательные
 void printNodeInfo(int index);
 String macToString(const uint8_t* mac);
 
@@ -312,14 +289,13 @@ const char index_html[] PROGMEM = R"rawliteral(
                         <span class="data-value">${node.online ? 'Online' : 'Offline'}</span>
                     </div>`;
             
-            // Данные в зависимости от типа узла
-            if(node.nodeType === 2) { // PIR
+            if(node.nodeType === 2) {
                 content += `
                     <div class="data-row">
                         <span class="data-label">Движение:</span>
                         <span class="data-value">${node.value1 == 1 ? 'Обнаружено' : 'Нет'}</span>
                     </div>`;
-            } else if(node.nodeType === 3) { // Реле
+            } else if(node.nodeType === 3) {
                 content += `
                     <div class="data-row">
                         <span class="data-label">Реле 1:</span>
@@ -329,13 +305,13 @@ const char index_html[] PROGMEM = R"rawliteral(
                         <span class="data-label">Реле 2:</span>
                         <span class="data-value">${node.relay2_state ? 'ВКЛ' : 'ВЫКЛ'}</span>
                     </div>`;
-            } else if(node.nodeType === 4) { // RGB
+            } else if(node.nodeType === 4) {
                 content += `
                     <div class="data-row">
                         <span class="data-label">RGB статус:</span>
                         <span class="data-value">${node.value1 ? 'Активен' : 'Выключен'}</span>
                     </div>`;
-            } else if(node.nodeType === 5) { // Свет
+            } else if(node.nodeType === 5) {
                 content += `
                     <div class="data-row">
                         <span class="data-label">Освещенность:</span>
@@ -346,7 +322,6 @@ const char index_html[] PROGMEM = R"rawliteral(
             content += `
                 </div>`;
             
-            // Кнопки управления для реле
             if(node.nodeType === 3) {
                 content += `
                 <div class="relay-control">
@@ -415,7 +390,6 @@ const char index_html[] PROGMEM = R"rawliteral(
             }
         }
         
-        // Автоматическое подключение при загрузке страницы
         window.addEventListener('load', connectWebSocket);
     </script>
 </body>
@@ -428,33 +402,23 @@ void setup() {
     delay(1000);
     
     Serial.println("\n==================================================");
-    Serial.println("       ESP32-S3 SMART HUB (FINAL VERSION)");
+    Serial.println("       ESP32-S3 SMART HUB (ВЕРСИЯ 2.3)");
     Serial.println("==================================================");
-    Serial.println("Архитектура: FreeRTOS + AsyncWebServer + ESP-NOW");
-    Serial.println("Версия: 2.0");
-    Serial.println("Дата: 2024");
+    Serial.println("Полностью исправлен для ESP32 Core 3.3.5+");
+    Serial.println("ESP-NOW API адаптирован под ESP-IDF v5.5");
     Serial.println("==================================================");
     
-    // 1. Создание семафора для защиты данных
     xNodesSemaphore = xSemaphoreCreateMutex();
     if (xNodesSemaphore == NULL) {
         Serial.println("❌ Ошибка создания семафора!");
         while (1) delay(1000);
     }
     
-    // 2. Настройка Wi-Fi точки доступа
     setupWiFiAP();
-    
-    // 3. Инициализация ESP-NOW
     setupESP_NOW();
-    
-    // 4. Регистрация предварительно настроенных узлов
     registerPreconfiguredNodes();
-    
-    // 5. Настройка асинхронного веб-сервера
     setupAsyncWebServer();
     
-    // 6. Создание FreeRTOS задач
     xTaskCreatePinnedToCore(
         Task_WebServer,
         "WebServer_Task",
@@ -462,7 +426,7 @@ void setup() {
         NULL,
         1,
         NULL,
-        0  // Core 0
+        0
     );
     
     xTaskCreatePinnedToCore(
@@ -470,9 +434,9 @@ void setup() {
         "ESPNow_Task",
         8192,
         NULL,
-        2,  // Более высокий приоритет
+        2,
         NULL,
-        1  // Core 1
+        1
     );
     
     Serial.println("✅ Система инициализирована успешно!");
@@ -484,7 +448,6 @@ void setup() {
 
 // ===================== ОСНОВНОЙ LOOP =====================
 void loop() {
-    // Основной loop пустой - вся логика в задачах FreeRTOS
     delay(1000);
 }
 
@@ -494,17 +457,10 @@ void loop() {
 void setupWiFiAP() {
     WiFi.mode(WIFI_AP);
     
-    // Конфигурация AP
     if (!WiFi.softAP(AP_SSID, AP_PASSWORD, 1, 0, 4)) {
         Serial.println("❌ Ошибка запуска точки доступа!");
         while (1) delay(1000);
     }
-    
-    // Настройка статического IP (опционально)
-    // IPAddress local_ip(192,168,4,1);
-    // IPAddress gateway(192,168,4,1);
-    // IPAddress subnet(255,255,255,0);
-    // WiFi.softAPConfig(local_ip, gateway, subnet);
     
     Serial.println("✅ Точка доступа создана:");
     Serial.println("   SSID: " + String(AP_SSID));
@@ -512,20 +468,19 @@ void setupWiFiAP() {
     Serial.println("   MAC: " + WiFi.softAPmacAddress());
 }
 
-// 2. Инициализация ESP-NOW
+// 2. Инициализация ESP-NOW (ПОЛНОСТЬЮ ИСПРАВЛЕННАЯ ВЕРСИЯ ДЛЯ API v5.5)
 void setupESP_NOW() {
     if (esp_now_init() != ESP_OK) {
         Serial.println("❌ Ошибка инициализации ESP-NOW!");
         while (1) delay(1000);
     }
     
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем правильные сигнатуры для ESP-IDF v5.5
     esp_now_register_send_cb(OnDataSent);
     esp_now_register_recv_cb(OnDataRecv);
     
-    // Установка мощности передачи (для экономии энергии)
     WiFi.setTxPower(WIFI_POWER_8_5dBm);
-    
-    Serial.println("✅ ESP-NOW инициализирован");
+    Serial.println("✅ ESP-NOW инициализирован (API v5.5)");
 }
 
 // 3. Регистрация предварительно настроенных узлов
@@ -534,14 +489,12 @@ void registerPreconfiguredNodes() {
     
     if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
         for (int i = 0; i < KNOWN_NODES_COUNT; i++) {
-            // Добавление в массив nodes
             int idx = nodeCount;
             if (idx >= MAX_NODES) {
                 Serial.println("⚠️ Достигнут лимит узлов!");
                 break;
             }
             
-            // Копирование данных
             memcpy(nodes[idx].mac, knownNodes[i].mac, 6);
             nodes[idx].nodeId = knownNodes[i].nodeId;
             nodes[idx].name = knownNodes[i].name;
@@ -550,7 +503,6 @@ void registerPreconfiguredNodes() {
             nodes[idx].online = false;
             nodes[idx].lastSeen = 0;
             
-            // Регистрация в ESP-NOW
             esp_now_peer_info_t peerInfo;
             memset(&peerInfo, 0, sizeof(peerInfo));
             memcpy(peerInfo.peer_addr, knownNodes[i].mac, 6);
@@ -584,16 +536,13 @@ void registerPreconfiguredNodes() {
 
 // 4. Настройка асинхронного веб-сервера
 void setupAsyncWebServer() {
-    // Настройка WebSocket
     ws.onEvent(onWebSocketEvent);
     server.addHandler(&ws);
     
-    // Главная страница
     server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
-        request->send_P(200, "text/html", index_html);
+        request->send(200, "text/html", index_html);
     });
     
-    // API: Получить список узлов в JSON
     server.on("/api/nodes", HTTP_GET, [](AsyncWebServerRequest* request) {
         if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
             String jsonResponse = getNodesJSON();
@@ -604,7 +553,6 @@ void setupAsyncWebServer() {
         }
     });
     
-    // API: Получить данные конкретного узла
     server.on("/api/node", HTTP_GET, [](AsyncWebServerRequest* request) {
         if (request->hasParam("id")) {
             int nodeId = request->getParam("id")->value().toInt();
@@ -622,7 +570,6 @@ void setupAsyncWebServer() {
         }
     });
     
-    // API: Отправить команду узлу
     server.on("/api/command", HTTP_POST, [](AsyncWebServerRequest* request) {
         if (request->hasParam("nodeId", true) && request->hasParam("command", true)) {
             int nodeId = request->getParam("nodeId", true)->value().toInt();
@@ -633,22 +580,21 @@ void setupAsyncWebServer() {
             if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
                 int index = findNodeById(nodeId);
                 if (index != -1) {
-                    // Определение типа команды
-                    uint8_t cmdType = 2; // По умолчанию - команда
+                    uint8_t cmdType = 2;
                     float val1 = 0, val2 = 0;
                     
                     if (command == "toggle" && request->hasParam("relayNum", true)) {
                         int relayNum = request->getParam("relayNum", true)->value().toInt();
                         val1 = (relayNum == 1) ? 1.0 : 2.0;
-                        cmdType = 3; // Команда переключения
+                        cmdType = 3;
                     } else if (command == "on" && request->hasParam("relayNum", true)) {
                         int relayNum = request->getParam("relayNum", true)->value().toInt();
                         val1 = (relayNum == 1) ? 1.0 : 2.0;
-                        cmdType = 4; // Команда включения
+                        cmdType = 4;
                     } else if (command == "off" && request->hasParam("relayNum", true)) {
                         int relayNum = request->getParam("relayNum", true)->value().toInt();
                         val1 = (relayNum == 1) ? 1.0 : 2.0;
-                        cmdType = 5; // Команда выключения
+                        cmdType = 5;
                     }
                     
                     success = sendEspNowCommand(nodeId, cmdType, val1, val2);
@@ -672,7 +618,6 @@ void setupAsyncWebServer() {
         }
     });
     
-    // Запуск сервера
     server.begin();
     Serial.println("✅ AsyncWebServer запущен на порту 80");
 }
@@ -683,7 +628,6 @@ void onWebSocketEvent(AsyncWebSocket* server, AsyncWebSocketClient* client,
     switch (type) {
         case WS_EVT_CONNECT:
             Serial.println("WebSocket клиент подключен: #" + String(client->id()));
-            // Отправляем текущее состояние при подключении
             broadcastSystemStatus();
             break;
             
@@ -694,29 +638,25 @@ void onWebSocketEvent(AsyncWebSocket* server, AsyncWebSocketClient* client,
         case WS_EVT_DATA: {
             AwsFrameInfo* info = (AwsFrameInfo*)arg;
             if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-                data[len] = 0; // Null-terminate
+                data[len] = 0;
                 String message = (char*)data;
                 
-                // Парсинг JSON
-                JsonDocument doc;
+                DynamicJsonDocument doc(1024);
                 DeserializationError error = deserializeJson(doc, message);
                 if (error) {
                     Serial.println("Ошибка парсинга WebSocket JSON: " + String(error.c_str()));
                     return;
                 }
                 
-                // Обработка команды
                 String msgType = doc["type"] | "";
                 
                 if (msgType == "get_nodes") {
-                    // Отправляем список узлов
                     if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
                         String jsonResponse = getNodesJSON();
                         xSemaphoreGive(xNodesSemaphore);
                         client->text(jsonResponse);
                     }
                 } else if (msgType == "send_command") {
-                    // Отправка команды узлу
                     uint32_t nodeId = doc["nodeId"] | 0;
                     String command = doc["command"] | "";
                     int relayNum = doc["relayNum"] | 1;
@@ -724,7 +664,6 @@ void onWebSocketEvent(AsyncWebSocket* server, AsyncWebSocketClient* client,
                     if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
                         int index = findNodeById(nodeId);
                         if (index != -1) {
-                            // Определение типа команды ESP-NOW
                             uint8_t cmdType = 2;
                             float val1 = (relayNum == 1) ? 1.0 : 2.0;
                             float val2 = 0;
@@ -739,7 +678,7 @@ void onWebSocketEvent(AsyncWebSocket* server, AsyncWebSocketClient* client,
                                 nodes[index].lastCommand = command + "_relay" + String(relayNum);
                                 nodes[index].lastCommandTime = millis();
                                 
-                                JsonDocument resp;
+                                DynamicJsonDocument resp(256);
                                 resp["type"] = "command_ack";
                                 resp["nodeId"] = nodeId;
                                 resp["command"] = command;
@@ -763,11 +702,17 @@ void onWebSocketEvent(AsyncWebSocket* server, AsyncWebSocketClient* client,
             
         case WS_EVT_PONG:
             break;
+            
+        case WS_EVT_PING:
+            break;
     }
 }
 
-// 6. Колбэки ESP-NOW
-void OnDataSent(const uint8_t* mac_addr, esp_now_send_status_t status) {
+// 6. КОЛБЭКИ ESP-NOW (ПОЛНОСТЬЮ ИСПРАВЛЕННЫЕ ДЛЯ ESP-IDF v5.5)
+void OnDataSent(const esp_now_send_info_t *send_info, esp_now_send_status_t status) {
+    // MAC-адрес получателя теперь получаем из структуры send_info
+    const uint8_t* mac_addr = send_info->des_addr;
+    
     char macStr[18];
     snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
              mac_addr[0], mac_addr[1], mac_addr[2],
@@ -781,7 +726,10 @@ void OnDataSent(const uint8_t* mac_addr, esp_now_send_status_t status) {
     Serial.println(macStr);
 }
 
-void OnDataRecv(const uint8_t* mac_addr, const uint8_t* incomingData, int len) {
+void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t* incomingData, int len) {
+    // MAC-адрес отправителя теперь получаем из структуры recv_info
+    const uint8_t* mac_addr = recv_info->src_addr;
+    
     if (len != sizeof(EspNowMessage)) {
         Serial.println("❌ Неверный размер пакета ESP-NOW: " + String(len) + " байт");
         return;
@@ -790,19 +738,14 @@ void OnDataRecv(const uint8_t* mac_addr, const uint8_t* incomingData, int len) {
     EspNowMessage msg;
     memcpy(&msg, incomingData, sizeof(msg));
     
-    // Поиск узла по MAC
     int index = findNodeByMac(mac_addr);
     
     if (index == -1) {
-        // Новый узел - попытка регистрации
         Serial.print("⚠️ Новый узел с MAC: ");
         Serial.println(macToString(mac_addr));
-        
-        // Можно добавить автоматическую регистрацию здесь
         return;
     }
     
-    // Обновление данных узла
     if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
         updateNodeData(index, &msg, WiFi.RSSI());
         xSemaphoreGive(xNodesSemaphore);
@@ -833,7 +776,6 @@ void updateNodeData(int index, const EspNowMessage* msg, int rssi) {
     
     NodeData* node = &nodes[index];
     
-    // Обновление данных
     node->value1 = msg->value1;
     node->value2 = msg->value2;
     node->relay1_state = msg->relay1_state;
@@ -844,11 +786,9 @@ void updateNodeData(int index, const EspNowMessage* msg, int rssi) {
     node->lastSeen = millis();
     node->online = true;
     
-    // Для отображения в вебе
     node->relay1State = (msg->relay1_state == 1);
     node->relay2State = (msg->relay2_state == 1);
     
-    // Логирование
     if (DEBUG_MODE) {
         Serial.print("📥 Данные от " + node->name + ": ");
         Serial.print("V1=" + String(node->value1, 2));
@@ -860,7 +800,6 @@ void updateNodeData(int index, const EspNowMessage* msg, int rssi) {
         Serial.println();
     }
     
-    // Отправка обновления через WebSocket
     sendWebSocketUpdate(index);
 }
 
@@ -873,8 +812,7 @@ void checkNodeTimeouts() {
                 nodes[i].online = false;
                 Serial.println("❌ Узел " + nodes[i].name + " оффлайн (таймаут)");
                 
-                // Отправка уведомления через WebSocket
-                JsonDocument doc;
+                DynamicJsonDocument doc(256);
                 doc["type"] = "node_offline";
                 doc["nodeId"] = nodes[i].nodeId;
                 
@@ -900,9 +838,8 @@ bool sendEspNowCommand(uint32_t nodeId, uint8_t commandType, float val1, float v
         return false;
     }
     
-    // Подготовка сообщения
     EspNowMessage msg;
-    msg.sender_id = 1; // ID хаба
+    msg.sender_id = 1;
     msg.command_type = commandType;
     msg.value1 = val1;
     msg.value2 = val2;
@@ -911,7 +848,6 @@ bool sendEspNowCommand(uint32_t nodeId, uint8_t commandType, float val1, float v
     msg.status = 0;
     msg.timestamp = millis();
     
-    // Отправка
     esp_err_t result = esp_now_send(nodes[index].mac, (uint8_t*)&msg, sizeof(msg));
     
     if (result == ESP_OK) {
@@ -926,7 +862,7 @@ bool sendEspNowCommand(uint32_t nodeId, uint8_t commandType, float val1, float v
 void sendWebSocketUpdate(int nodeIndex) {
     if (nodeIndex < 0 || nodeIndex >= nodeCount) return;
     
-    JsonDocument doc;
+    DynamicJsonDocument doc(512);
     doc["type"] = "node_update";
     
     JsonObject nodeObj = doc.createNestedObject("node");
@@ -943,13 +879,11 @@ void sendWebSocketUpdate(int nodeIndex) {
     
     String jsonStr;
     serializeJson(doc, jsonStr);
-    
-    // Отправка всем подключенным клиентам
     ws.textAll(jsonStr);
 }
 
 void broadcastSystemStatus() {
-    JsonDocument doc;
+    DynamicJsonDocument doc(256);
     doc["type"] = "system_status";
     doc["wifi_connected"] = true;
     doc["free_heap"] = ESP.getFreeHeap();
@@ -957,7 +891,6 @@ void broadcastSystemStatus() {
     doc["node_count"] = nodeCount;
     doc["online_count"] = 0;
     
-    // Подсчет онлайн узлов
     if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
         for (int i = 0; i < nodeCount; i++) {
             if (nodes[i].online) doc["online_count"] = doc["online_count"].as<int>() + 1;
@@ -970,15 +903,15 @@ void broadcastSystemStatus() {
     ws.textAll(jsonStr);
 }
 
-// 9. JSON функции
+// 9. JSON функции (исправлены для ArduinoJson 6)
 String getNodesJSON() {
-    JsonDocument doc;
+    DynamicJsonDocument doc(2048);
     doc["type"] = "nodes_list";
     
     JsonArray nodesArray = doc.createNestedArray("nodes");
     
     for (int i = 0; i < nodeCount; i++) {
-        JsonObject nodeObj = nodesArray.add<JsonObject>();
+        JsonObject nodeObj = nodesArray.createNestedObject();
         nodeObj["nodeId"] = nodes[i].nodeId;
         nodeObj["name"] = nodes[i].name;
         nodeObj["nodeType"] = nodes[i].nodeType;
@@ -1002,7 +935,7 @@ String getNodeJSON(int index) {
         return "{\"error\":\"invalid_index\"}";
     }
     
-    JsonDocument doc;
+    DynamicJsonDocument doc(512);
     doc["nodeId"] = nodes[index].nodeId;
     doc["name"] = nodes[index].name;
     doc["nodeType"] = nodes[index].nodeType;
@@ -1030,17 +963,14 @@ void Task_WebServer(void* pvParameters) {
     Serial.println("✅ Задача WebServer запущена на Core " + String(xPortGetCoreID()));
     
     for (;;) {
-        // Очистка неактивных WebSocket клиентов
         ws.cleanupClients();
         
-        // Проверка таймаутов узлов каждые 5 секунд
         static unsigned long lastCheck = 0;
         if (millis() - lastCheck > 5000) {
             lastCheck = millis();
             checkNodeTimeouts();
         }
         
-        // Отправка статуса системы каждые 10 секунд
         static unsigned long lastStatus = 0;
         if (millis() - lastStatus > 10000) {
             lastStatus = millis();
@@ -1054,19 +984,14 @@ void Task_WebServer(void* pvParameters) {
 void Task_ESPNowLogic(void* pvParameters) {
     Serial.println("✅ Задача ESPNowLogic запущена на Core " + String(xPortGetCoreID()));
     
-    // Здесь можно добавить периодическую отправку команд узлам
-    // или другие операции ESP-NOW
-    
     for (;;) {
-        // Пример: отправка ping каждые 30 секунд
         static unsigned long lastPing = 0;
         if (millis() - lastPing > 30000) {
             lastPing = millis();
             
             if (xSemaphoreTake(xNodesSemaphore, portMAX_DELAY) == pdTRUE) {
                 for (int i = 0; i < nodeCount; i++) {
-                    if (nodes[i].espNowRegistered) {
-                        // Отправка ping сообщения
+                    if (nodes[i].espNowRegistered && nodes[i].online) {
                         sendEspNowCommand(nodes[i].nodeId, 1, 0, 0);
                     }
                 }
