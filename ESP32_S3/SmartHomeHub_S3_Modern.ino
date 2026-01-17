@@ -1,7 +1,6 @@
 // ======================================================================
-// ESP32-S3 SMART HOME HUB - CLEAN VERSION (2025)
+// ESP32-S3 SMART HOME HUB - FINAL CLEAN VERSION (2025)
 // Совместим с: ESP-IDF v5.5, ArduinoJson 7.x, ESPAsyncWebServer
-// Без предупреждений компиляции
 // ======================================================================
 
 #include <WiFi.h>
@@ -272,14 +271,22 @@ void sendNodeListWS() {
   JsonDocument doc;
   doc["type"] = "nodeList";
   
+void sendNodeListWS() {
+  JsonDocument doc;
+  doc["type"] = "nodeList";
+  
   JsonArray nodesArray = doc["nodes"].to<JsonArray>();
   for (uint8_t i = 0; i < nodeCount; i++) {
     JsonObject node = nodesArray.add<JsonObject>();
     node["id"] = nodes[i].id;
     node["online"] = nodes[i].online;
     node["lastSeen"] = nodes[i].lastSeen;
-    node["temperature"] = isnan(nodes[i].temperature) ? nullptr : nodes[i].temperature;
-    node["humidity"] = isnan(nodes[i].humidity) ? nullptr : nodes[i].humidity;
+    if (!isnan(nodes[i].temperature)) {
+      node["temperature"] = nodes[i].temperature;
+    }
+    if (!isnan(nodes[i].humidity)) {
+      node["humidity"] = nodes[i].humidity;
+    }
     node["relay1"] = nodes[i].relay1;
     node["relay2"] = nodes[i].relay2;
     node["led"] = nodes[i].led;
@@ -355,7 +362,7 @@ void initWebServer() {
   
   server.on("/api/system", HTTP_GET, [](AsyncWebServerRequest *request) {
     JsonDocument doc;
-    doc["version"] = "2025.01 Clean";
+    doc["version"] = "2025.01 Final";
     doc["chipModel"] = ESP.getChipModel();
     doc["freeHeap"] = ESP.getFreeHeap();
     doc["uptime"] = millis() / 1000;
@@ -388,7 +395,7 @@ void setup() {
   delay(1000);
   
   Serial.println("\n========================================");
-  Serial.println("ESP32-S3 Smart Home Hub - Clean Version");
+  Serial.println("ESP32-S3 Smart Home Hub - Final Version");
   Serial.println("========================================\n");
   
   // Инициализация файловой системы
