@@ -1,14 +1,22 @@
-In file included from H:/RADIO/MK/Progi/FLProg/downloads/PortableFLProg_8-1-0_Win64/ideV8/portable/packages/esp32/tools/esp-rv32/2511/riscv32-esp-elf/include/c++/14.2.0/stdlib.h:36,
-                 from H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-9bb7aa84-v2\esp32c3/include/newlib/platform_include/assert.h:12,
-                 from H:/RADIO/MK/Progi/FLProg/downloads/PortableFLProg_8-1-0_Win64/ideV8/portable/packages/esp32/tools/esp-rv32/2511/riscv32-esp-elf/include/sys/reent.h:458,
-                 from H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-9bb7aa84-v2\esp32c3/include/newlib/platform_include/sys/reent.h:15,
-                 from H:/RADIO/MK/Progi/FLProg/downloads/PortableFLProg_8-1-0_Win64/ideV8/portable/packages/esp32/tools/esp-rv32/2511/riscv32-esp-elf/include/stdio.h:60,
-                 from H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-9bb7aa84-v2\esp32c3/include/newlib/platform_include/stdio.h:10,
-                 from H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\hardware\esp32\3.3.5\cores\esp32/Arduino.h:27,
-                 from C:\Users\sasa\AppData\Local\Temp\arduino_build_835087\sketch\sketch_jan18b.ino.cpp:1:
-H:/RADIO/MK/Progi/FLProg/downloads/PortableFLProg_8-1-0_Win64/ideV8/portable/packages/esp32/tools/esp-rv32/2511/riscv32-esp-elf/include/c++/14.2.0/cstdlib:41:10: fatal error: bits/c++config.h: No such file or directory
-   41 | #include <bits/c++config.h>
-      |          ^~~~~~~~~~~~~~~~~~
-compilation terminated.
-exit status 1
-Ошибка компиляции для платы ESP32C3 Dev Module.
+02:44:44.781 -> ✅ Система инициализирована успешно!
+02:44:44.781 ->    - Wi-Fi AP: ESP32-S3-Hub
+02:44:44.781 ->    - IP адрес: 192.168.4.1
+02:44:44.781 ->    - Зарегистрировано узлов: 4
+02:44:44.781 -> ==================================================
+02:44:44.781 -> 
+02:45:25.467 -> �а на Core 0
+02:45:25.467 -> 
+02:45:25.467 -> ✅ Система инициализирована успешно!
+02:45:25.467 ->    - Wi-Fi AP: ESP32-S3-Hub
+02:45:25.467 ->    - IP адрес: 192.168.4.1
+02:45:25.467 ->    - Зарегистрировано узлов: 4
+02:45:25.467 -> ==================================================
+02:45:25.467 -> 
+02:45:42.467 -> WebSocket клиент подключен: #1
+02:45:46.122 -> WebSocket клиент отключен: #1
+02:45:48.862 -> WebSocket клиент подключен: #2
+02:46:24.087 -> WebSocket клиент подключен: #3
+02:46:24.151 -> WebSocket клиент отключен: #2
+02:46:26.096 -> WebSocket клиент отключен: #3
+02:46:28.863 -> WebSocket клиент подключен: #4
+02:47:01.077 -> ❌ Неверный размер пакета ESP-NOW: 84 байт
