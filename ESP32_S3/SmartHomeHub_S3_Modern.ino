@@ -1,6 +1,6 @@
 // ======================================================================
 // ESP32-S3 SMART HOME HUB - MODERN VERSION (2025)
-// Совместим с: ArduinoJson 7.x, ESPAsyncWebServer, ESP-NOW 2.x
+// Совместим с: ESP-IDF v5.5, ArduinoJson 7.x, ESPAsyncWebServer
 // ======================================================================
 
 #include <WiFi.h>
@@ -61,6 +61,20 @@ uint8_t nodeMacs[][6] = {
   {0x24, 0x6F, 0x28, 0x8A, 0x10, 0x3C}  // Узел 2
 };
 
+// ------------------- ПРОТОТИПЫ ФУНКЦИЙ -------------------
+void initESPNow();
+void onESPNowRecv(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len);
+void onESPNowSend(const wifi_tx_info_t *info, esp_now_send_status_t status);
+bool sendESPNowCommand(uint8_t targetId, const char* command);
+void updateNode(uint8_t nodeId, const char* command);
+void checkNodeTimeouts();
+String getTimeString();
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length);
+void sendNodeListWS();
+void sendNodeUpdateWS(uint8_t nodeId, const char* command);
+void sendSystemInfoWS();
+void initWebServer();
+
 // ------------------- ESP-NOW ФУНКЦИИ -------------------
 void initESPNow() {
   if (esp_now_init() != ESP_OK) {
@@ -87,25 +101,43 @@ void initESPNow() {
   Serial.println("✅ ESP-NOW инициализирован");
 }
 
-void onESPNowRecv(const uint8_t *mac, const uint8_t *data, int len) {
+void onESPNowRecv(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len) {
   if (len < sizeof(espnow_message_t)) return;
   
   espnow_message_t msg;
   memcpy(&msg, data, sizeof(msg));
+  
+  // Извлекаем MAC-адрес из новой структуры
+  const uint8_t* mac = recv_info->src_addr;
   
   // Обновляем данные узла
   updateNode(msg.sender_id, msg.command);
   
   // Отправляем обновление через WebSocket
   sendNodeUpdateWS(msg.sender_id, msg.command);
+  
+  // Логирование
+  Serial.printf("📥 ESP-NOW от ");
+  for(int i=0; i<6; i++) Serial.printf("%02X:", mac[i]);
+  Serial.printf(" команда: %s\n", msg.command);
 }
 
-void onESPNowSend(const uint8_t *mac, esp_now_send_status_t status) {
-  // Можно добавить логику подтверждения доставки
+void onESPNowSend(const wifi_tx_info_t *info, esp_now_send_status_t status) {
+  if (status != ESP_NOW_SEND_SUCCESS) {
+    Serial.println("⚠️ ESP-NOW отправка не удалась");
+  }
 }
 
 bool sendESPNowCommand(uint8_t targetId, const char* command) {
-  if (!espNowInitialized) return false;
+  if (!espNowInitialized) {
+    Serial.println("❌ ESP-NOW не инициализирован");
+    return false;
+  }
+  
+  if (targetId == 0 || targetId > sizeof(nodeMacs)/6) {
+    Serial.printf("❌ Неверный ID узла: %d\n", targetId);
+    return false;
+  }
   
   espnow_message_t msg;
   strlcpy(msg.command, command, sizeof(msg.command));
@@ -113,16 +145,12 @@ bool sendESPNowCommand(uint8_t targetId, const char* command) {
   msg.target_id = targetId;
   msg.timestamp = millis();
   
-  // Ищем MAC-адрес узла (упрощённо - по индексу)
-  if (targetId > 0 && targetId <= sizeof(nodeMacs)/6) {
-    esp_err_t result = esp_now_send(nodeMacs[targetId-1], (uint8_t*)&msg, sizeof(msg));
-    Serial.printf("📤 Команда к узлу %d: %s (%s)\n", 
-                  targetId, command, 
-                  result == ESP_OK ? "OK" : "FAIL");
-    return result == ESP_OK;
-  }
+  esp_err_t result = esp_now_send(nodeMacs[targetId-1], (uint8_t*)&msg, sizeof(msg));
   
-  return false;
+  Serial.printf("📤 Команда к узлу %d: %s (%s)\n", 
+                targetId, command, 
+                result == ESP_OK ? "OK" : "FAIL");
+  return result == ESP_OK;
 }
 
 // ------------------- УПРАВЛЕНИЕ УЗЛАМИ -------------------
@@ -139,6 +167,8 @@ void updateNode(uint8_t nodeId, const char* command) {
       else if (strstr(command, "ACK_OFF")) nodes[i].led = false;
       else if (strstr(command, "ACK_RELAY1_ON")) nodes[i].relay1 = true;
       else if (strstr(command, "ACK_RELAY1_OFF")) nodes[i].relay1 = false;
+      else if (strstr(command, "ACK_RELAY2_ON")) nodes[i].relay2 = true;
+      else if (strstr(command, "ACK_RELAY2_OFF")) nodes[i].relay2 = false;
       
       return;
     }
@@ -151,17 +181,22 @@ void updateNode(uint8_t nodeId, const char* command) {
     nodes[nodeCount].lastUpdate = millis();
     nodes[nodeCount].lastSeen = getTimeString();
     nodeCount++;
+    
     Serial.printf("🆕 Новый узел: #%d\n", nodeId);
+    Serial.printf("Всего узлов: %d\n", nodeCount);
   }
 }
 
 void checkNodeTimeouts() {
+  bool changed = false;
   for (int i = 0; i < nodeCount; i++) {
     if (nodes[i].online && (millis() - nodes[i].lastUpdate > NODE_TIMEOUT)) {
       nodes[i].online = false;
+      changed = true;
       Serial.printf("⏰ Узел #%d: таймаут\n", nodes[i].id);
     }
   }
+  if (changed) sendNodeListWS();
 }
 
 String getTimeString() {
@@ -178,10 +213,13 @@ String getTimeString() {
 // ------------------- WEB SOCKET -------------------
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
   switch (type) {
-    case WStype_CONNECTED:
+    case WStype_CONNECTED: {
       Serial.printf("🔗 WS[%u] подключен\n", num);
+      IPAddress ip = webSocket.remoteIP(num);
+      Serial.printf("IP клиента: %d.%d.%d.%d\n", ip[0], ip[1], ip[2], ip[3]);
       sendNodeListWS();
       break;
+    }
       
     case WStype_TEXT: {
       // Парсим JSON сообщение
@@ -200,14 +238,31 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
         uint8_t nodeId = doc["nodeId"];
         const char* command = doc["command"];
         if (nodeId && command) {
-          sendESPNowCommand(nodeId, command);
+          bool success = sendESPNowCommand(nodeId, command);
+          
+          // Отправляем подтверждение клиенту
+          JsonDocument response;
+          response["type"] = "commandResult";
+          response["nodeId"] = nodeId;
+          response["command"] = command;
+          response["success"] = success;
+          
+          String json;
+          serializeJson(response, json);
+          webSocket.sendTXT(num, json);
         }
+      }
+      else if (strcmp(action, "getSystem") == 0) {
+        sendSystemInfoWS();
       }
       break;
     }
       
     case WStype_DISCONNECTED:
       Serial.printf("🔌 WS[%u] отключен\n", num);
+      break;
+      
+    default:
       break;
   }
 }
@@ -259,6 +314,8 @@ void sendSystemInfoWS() {
     if (nodes[i].online) online++;
   }
   doc["nodesOnline"] = online;
+  doc["totalNodes"] = nodeCount;
+  doc["espNowActive"] = espNowInitialized;
   
   String json;
   serializeJson(doc, json);
@@ -272,13 +329,25 @@ void initWebServer() {
     if (SPIFFS.exists("/index.html")) {
       request->send(SPIFFS, "/index.html", "text/html");
     } else {
-      request->send(200, "text/html", 
-        "<h1>ESP32-S3 Smart Home Hub</h1>"
-        "<p>Файл index.html не найден. Загрузите его через esptool.</p>");
+      // Простая заглушка если index.html не загружен
+      String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>";
+      html += "<title>ESP32-S3 Smart Home Hub</title>";
+      html += "<style>body{font-family:Arial;padding:20px;}</style>";
+      html += "</head><body>";
+      html += "<h1>🏠 Умный Дом Хаб (ESP32-S3)</h1>";
+      html += "<p><strong>Статус:</strong> ✅ Активен</p>";
+      html += "<p><strong>WiFi:</strong> " + String(AP_SSID) + "</p>";
+      html += "<p><strong>IP:</strong> " + WiFi.softAPIP().toString() + "</p>";
+      html += "<p><strong>Узлов онлайн:</strong> <span id='onlineCount'>0</span></p>";
+      html += "<hr>";
+      html += "<p>Для полного интерфейса загрузите index.html через esptool:</p>";
+      html += "<code>python -m esptool --chip esp32s3 --port COMx write_flash 0x310000 data/index.html</code>";
+      html += "</body></html>";
+      request->send(200, "text/html", html);
     }
   });
   
-  // API: список узлов
+  // API: список узлов (JSON)
   server.on("/api/nodes", HTTP_GET, [](AsyncWebServerRequest *request) {
     JsonDocument doc;
     JsonArray array = doc["nodes"].to<JsonArray>();
@@ -287,8 +356,9 @@ void initWebServer() {
       JsonObject node = array.add<JsonObject>();
       node["id"] = nodes[i].id;
       node["online"] = nodes[i].online;
-      node["rssi"] = nodes[i].rssi;
       node["lastSeen"] = nodes[i].lastSeen;
+      node["temperature"] = nodes[i].temperature;
+      node["humidity"] = nodes[i].humidity;
     }
     
     String json;
@@ -308,16 +378,31 @@ void initWebServer() {
       doc["success"] = success;
       doc["node"] = nodeId;
       doc["command"] = command;
+      doc["timestamp"] = millis();
       
       String json;
       serializeJson(doc, json);
       request->send(200, "application/json", json);
     } else {
-      request->send(400, "text/plain", "Не хватает параметров");
+      request->send(400, "application/json", "{\"error\":\"Missing parameters\"}");
     }
   });
   
-  // Статические файлы
+  // API: системная информация
+  server.on("/api/system", HTTP_GET, [](AsyncWebServerRequest *request) {
+    JsonDocument doc;
+    doc["version"] = "2025.01 Modern";
+    doc["chipModel"] = ESP.getChipModel();
+    doc["freeHeap"] = ESP.getFreeHeap();
+    doc["wifiClients"] = WiFi.softAPgetStationNum();
+    doc["uptime"] = millis() / 1000;
+    
+    String json;
+    serializeJson(doc, json);
+    request->send(200, "application/json", json);
+  });
+  
+  // Статические файлы из SPIFFS
   server.serveStatic("/", SPIFFS, "/");
   
   server.begin();
@@ -330,8 +415,8 @@ void setup() {
   delay(1000);
   
   Serial.println("\n" + String(ESP.getChipModel()) + " Smart Home Hub");
-  Serial.println("Версия прошивки: 2025.01 Modern");
-  Serial.println("================================");
+  Serial.println("Версия прошивки: 2025.01 Modern (ESP-IDF v5.5)");
+  Serial.println("==============================================");
   
   // Инициализация файловой системы
   if (!SPIFFS.begin(true)) {
@@ -341,14 +426,24 @@ void setup() {
   }
   Serial.println("✅ Файловая система SPIFFS");
   
+  // Список файлов в SPIFFS (для отладки)
+  File root = SPIFFS.open("/");
+  File file = root.openNextFile();
+  Serial.println("📁 Содержимое SPIFFS:");
+  while(file){
+    Serial.printf("  %s (%d байт)\n", file.name(), file.size());
+    file = root.openNextFile();
+  }
+  
   // Настройка WiFi точки доступа
   WiFi.softAP(AP_SSID, AP_PASSWORD);
   WiFi.softAPConfig(localIP, gateway, subnet);
   delay(100);
   
-  Serial.println("✅ WiFi Точка доступа:");
-  Serial.print("   SSID: "); Serial.println(AP_SSID);
-  Serial.print("   IP: "); Serial.println(WiFi.softAPIP());
+  Serial.println("\n✅ WiFi Точка доступа:");
+  Serial.print("   SSID:     "); Serial.println(AP_SSID);
+  Serial.print("   IP:       "); Serial.println(WiFi.softAPIP());
+  Serial.print("   Клиенты:  "); Serial.println(WiFi.softAPgetStationNum());
   
   // Настройка веб-сервера
   initWebServer();
@@ -363,6 +458,8 @@ void setup() {
   
   Serial.println("\n✅ Хаб готов к работе!");
   Serial.println("   Веб-интерфейс: http://192.168.4.1");
+  Serial.println("   WebSocket:     ws://192.168.4.1:81");
+  Serial.println("   API:           http://192.168.4.1/api/*");
   Serial.println("   Жду подключения узлов...\n");
 }
 
@@ -377,8 +474,17 @@ void loop() {
     checkNodeTimeouts();
     
     if (webSocket.connectedClients() > 0) {
-      sendNodeListWS();
+      // Отправляем обновления только если есть подключенные клиенты
       sendSystemInfoWS();
+    }
+    
+    // Раз в 30 секунд отправляем полный список узлов
+    static unsigned long lastFullUpdate = 0;
+    if (millis() - lastFullUpdate > 30000) {
+      lastFullUpdate = millis();
+      if (webSocket.connectedClients() > 0) {
+        sendNodeListWS();
+      }
     }
   }
   
