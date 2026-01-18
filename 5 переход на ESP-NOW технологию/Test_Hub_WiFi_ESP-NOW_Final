@@ -1,0 +1,233 @@
+// ======================================================================
+// НАЗВАНИЕ: Test_Hub_WiFi_ESP-NOW_Final.ino
+// ВЕРСИЯ: 1.0 для ESP32 Arduino Core 3.3.5+
+// УСТРОЙСТВО: ESP32-WROOM (или любой ESP32 с Wi-Fi)
+// ФУНКЦИЯ: 1. Создаёт Wi-Fi сеть "ESP32-Hub-Test"
+//          2. Раздаёт веб-страницу с кнопками
+//          3. Принимает команды по WebSocket
+//          4. Отправляет команды по ESP-NOW на узел AC:EB:E6:49:10:28
+//          5. Принимает подтверждения и обновляет веб-статус
+// ВАЖНО: Использует новый API ESP-NOW для Core 3.3.5
+// ======================================================================
+
+#include <WiFi.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncTCP.h>
+#include <esp_now.h>
+#include <ArduinoJson.h>
+
+// ------ 1. КОНФИГУРАЦИЯ WI-FI ТОЧКИ ДОСТУПА ------
+const char* AP_SSID = "ESP32-Hub-Test";
+const char* AP_PASSWORD = "test12345678";
+
+// ------ 2. КОНФИГУРАЦИЯ ESP-NOW ------
+// ЗАМЕНИТЕ ЭТОТ МАК-АДРЕС НА АДРЕС ВАШЕГО УЗЛА ESP32-C3!
+uint8_t nodeMacAddress[] = {0xAC, 0xEB, 0xE6, 0x49, 0x10, 0x28}; // Узел: AC:EB:E6:49:10:28
+
+// Структура данных ESP-NOW (должна совпадать со структурой на узле!)
+typedef struct esp_now_message {
+    char command[16];      // "LED_ON", "LED_OFF", "ACK_ON", "ACK_OFF"
+    uint8_t sender_id;     // ID отправителя
+} esp_now_message;
+
+esp_now_message outgoingMessage; // Для отправки
+esp_now_message incomingMessage; // Для приёма
+
+// ------ 3. ГЛОБАЛЬНЫЕ ОБЪЕКТЫ ------
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws"); // WebSocket endpoint
+
+// ------ 4. ПРОТОТИПЫ ФУНКЦИЙ (Новый API для Core 3.3.5) ------
+void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, 
+                      AwsEventType type, void *arg, uint8_t *data, size_t len);
+void onEspNowDataSent(const wifi_tx_info_t *info, esp_now_send_status_t status);
+void onEspNowDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingData, int len);
+void sendCommandToNode(String cmd);
+void broadcastStatus(String statusText);
+
+// ===================== SETUP =====================
+void setup() {
+    Serial.begin(115200);
+    delay(1000);
+    Serial.println("\n=== ТЕСТОВЫЙ ХАБ (Wi-Fi + ESP-NOW) ===");
+    Serial.println("Версия для ESP32 Core 3.3.5+");
+
+    // ------ 1. ИНИЦИАЛИЗАЦИЯ WI-FI ТОЧКИ ДОСТУПА ------
+    Serial.print("Запуск точки доступа: ");
+    Serial.println(AP_SSID);
+    WiFi.mode(WIFI_AP);
+    if (!WiFi.softAP(AP_SSID, AP_PASSWORD)) {
+        Serial.println("❌ Ошибка создания точки доступа!");
+        while(1) delay(1000);
+    }
+    Serial.print("IP адрес хаба: ");
+    Serial.println(WiFi.softAPIP());
+
+    // ------ 2. ИНИЦИАЛИЗАЦИЯ WEB-СЕРВЕРА И WEB SOCKET ------
+    // Раздача главной страницы
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+        String html = R"rawliteral(
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Тест ESP-NOW Хаб</title>
+            <style>
+                body {font-family: Arial; text-align: center; margin-top: 50px;}
+                button {font-size: 20px; padding: 15px 30px; margin: 10px; border: none; border-radius: 8px; cursor: pointer;}
+                #btnOn {background: #4CAF50; color: white;}
+                #btnOff {background: #f44336; color: white;}
+                #status {margin-top: 30px; font-size: 22px; padding: 15px; background: #f5f5f5; border-radius: 8px;}
+                .on {color: #4CAF50; font-weight: bold;}
+                .off {color: #f44336; font-weight: bold;}
+            </style>
+        </head>
+        <body>
+            <h1>ESP-NOW Тест: Управление удалённым узлом</h1>
+            <p>MAC узла: AC:EB:E6:49:10:28</p>
+            <button id="btnOn" onclick="sendCommand('LED_ON')">▶ ВКЛЮЧИТЬ LED</button>
+            <button id="btnOff" onclick="sendCommand('LED_OFF')">⏸ ВЫКЛЮЧИТЬ LED</button>
+            <div id="status">Статус: Ожидание подключения...</div>
+            <script>
+                const ws = new WebSocket('ws://' + window.location.hostname + '/ws');
+                ws.onopen = function() {
+                    document.getElementById('status').innerHTML = 'Статус: <span class="on">Подключён к хабу</span>';
+                };
+                ws.onmessage = function(event) {
+                    const msg = JSON.parse(event.data);
+                    if(msg.type === 'status') {
+                        const statusElem = document.getElementById('status');
+                        statusElem.innerHTML = 'Статус узла: <span class="' + msg.state + '">' + msg.text + '</span>';
+                        if(msg.state === 'on') {
+                            document.getElementById('btnOn').style.opacity = '0.6';
+                            document.getElementById('btnOff').style.opacity = '1';
+                        } else {
+                            document.getElementById('btnOn').style.opacity = '1';
+                            document.getElementById('btnOff').style.opacity = '0.6';
+                        }
+                    }
+                };
+                function sendCommand(cmd) {
+                    ws.send(JSON.stringify({command: cmd}));
+                }
+            </script>
+        </body>
+        </html>
+        )rawliteral";
+        request->send(200, "text/html", html);
+    });
+
+    ws.onEvent(onWebSocketEvent);
+    server.addHandler(&ws);
+    server.begin();
+    Serial.println("✅ Веб-сервер и WebSocket запущены.");
+
+    // ------ 3. ИНИЦИАЛИЗАЦИЯ ESP-NOW (НОВЫЙ API для Core 3.3.5) ------
+    WiFi.mode(WIFI_AP_STA); // Важно! Режим AP+STA для работы ESP-NOW
+    if (esp_now_init() != ESP_OK) {
+        Serial.println("❌ Ошибка инициализации ESP-NOW!");
+        while(1) delay(1000);
+    }
+    
+    // Регистрация колбэков с новыми сигнатурами
+    esp_now_register_send_cb(onEspNowDataSent);
+    esp_now_register_recv_cb(onEspNowDataRecv);
+
+    // Добавление пира (удалённого узла)
+    esp_now_peer_info_t peerInfo = {};
+    memcpy(peerInfo.peer_addr, nodeMacAddress, 6);
+    peerInfo.channel = 0;
+    peerInfo.encrypt = false;
+    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+        Serial.println("❌ Не удалось добавить узел в ESP-NOW!");
+    } else {
+        Serial.println("✅ Узел добавлен в ESP-NOW.");
+    }
+    
+    Serial.println("\n=== ХАБ ГОТОВ К РАБОТЕ ===");
+    Serial.println("1. Подключите Android/ПК к сети: " + String(AP_SSID));
+    Serial.println("2. Откройте в браузере: http://" + WiFi.softAPIP().toString());
+    Serial.println("3. Используйте кнопки для управления узлом\n");
+}
+
+// ===================== LOOP =====================
+void loop() {
+    ws.cleanupClients(); // Очистка неактивных WebSocket клиентов
+    delay(10);
+}
+
+// ------ ОБРАБОТЧИК СОБЫТИЙ WEB SOCKET ------
+void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, 
+                      AwsEventType type, void *arg, uint8_t *data, size_t len) {
+    if (type == WS_EVT_DATA) {
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, data, len);
+        if (!error && doc.containsKey("command")) {
+            String cmd = doc["command"].as<String>();
+            Serial.print("📨 Команда с веб-страницы: ");
+            Serial.println(cmd);
+            sendCommandToNode(cmd);
+        }
+    }
+}
+
+// ------ ОТПРАВКА КОМАНДЫ НА УЗЕЛ ПО ESP-NOW ------
+void sendCommandToNode(String cmd) {
+    strncpy(outgoingMessage.command, cmd.c_str(), sizeof(outgoingMessage.command)-1);
+    outgoingMessage.sender_id = 1; // ID хаба
+    
+    esp_err_t result = esp_now_send(nodeMacAddress, (uint8_t *) &outgoingMessage, sizeof(outgoingMessage));
+    if (result == ESP_OK) {
+        Serial.print("📡 Команда '");
+        Serial.print(cmd);
+        Serial.println("' отправлена по ESP-NOW.");
+    } else {
+        Serial.print("❌ Ошибка отправки ESP-NOW: ");
+        Serial.println(result);
+    }
+}
+
+// ------ КОЛБЭК ПОДТВЕРЖДЕНИЯ ОТПРАВКИ ESP-NOW (НОВЫЙ API) ------
+void onEspNowDataSent(const wifi_tx_info_t *info, esp_now_send_status_t status) {
+    Serial.print("✉️ Доставка ESP-NOW: ");
+    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Успех" : "Ошибка");
+}
+
+// ------ КОЛБЭК ПРИЁМА ДАННЫХ ПО ESP-NOW (НОВЫЙ API) ------
+void onEspNowDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingData, int len) {
+    const uint8_t *senderMac = recv_info->src_addr;
+    memcpy(&incomingMessage, incomingData, sizeof(incomingMessage));
+    
+    Serial.print("📥 Получено от ");
+    for (int i = 0; i < 6; i++) {
+        Serial.print(senderMac[i], HEX);
+        if (i < 5) Serial.print(":");
+    }
+    Serial.print(": ");
+    Serial.print(incomingMessage.command);
+    Serial.print(" от ID:");
+    Serial.println(incomingMessage.sender_id);
+
+    // Обработка подтверждений от узла
+    if (strcmp(incomingMessage.command, "ACK_ON") == 0) {
+        broadcastStatus("LED на узле ВКЛЮЧЁН");
+    } else if (strcmp(incomingMessage.command, "ACK_OFF") == 0) {
+        broadcastStatus("LED на узле ВЫКЛЮЧЕН");
+    }
+}
+
+// ------ ОТПРАВКА СТАТУСА ВСЕМ WEB SOCKET КЛИЕНТАМ ------
+void broadcastStatus(String statusText) {
+    JsonDocument doc;
+    doc["type"] = "status";
+    doc["text"] = statusText;
+    doc["state"] = statusText.indexOf("ВКЛ") != -1 ? "on" : "off";
+    
+    String jsonResponse;
+    serializeJson(doc, jsonResponse);
+    ws.textAll(jsonResponse);
+    
+    Serial.print("🌐 Веб-статус обновлён: ");
+    Serial.println(statusText);
+}
