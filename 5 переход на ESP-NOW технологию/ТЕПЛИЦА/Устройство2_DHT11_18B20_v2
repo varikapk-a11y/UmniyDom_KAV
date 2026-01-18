@@ -1,0 +1,250 @@
+#include <ESP8266WiFi.h>
+#include <espnow.h>
+bool st235605003 = true;
+uint8_t broadcastAddress235605003[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+char char_arraya235605003[32];
+char char_arrayb235605003[32];
+typedef struct struct_message235605003 
+{
+    char a235605003[32];
+    char b235605003[32];
+    int c235605003;
+    int d235605003;
+    int e235605003;
+    int f235605003;
+    bool k235605003;
+    bool m235605003;
+}
+ struct_message235605003;
+struct_message235605003 myData235605003;
+struct_message235605003 _myData235605003;
+#include "RT_HW_BASE.h"
+#include "flprogUtilites.h"
+#include "DHT_NEW.h"
+#include <OneWire.h>
+#ifdef RT_HW_SPECIAL_INCLUDE
+#include RT_HW_SPECIAL_INCLUDE
+#endif
+#ifdef RT_HW_SPECIAL_ISTANCE
+RT_HW_SPECIAL_ISTANCE
+#endif
+DHT _dht1;
+byte _d18x2x2Addr[8]={0x28, 0xf6, 0xc1, 0xd5, 0x3, 0x0, 0x0, 0x55};
+byte _d18x2x1Addr[8]={0x28, 0xb1, 0xdd, 0xd5, 0x3, 0x0, 0x0, 0xf8};
+OneWire  _ow4(4);
+String _gtv1 = "";
+String _gtv2;
+FlprogDiscreteOutputPin FLProgPin_15(15, 0, 0);
+FlprogDiscreteOutputPin FLProgPin_0(0, 0, 0);
+FlprogDiscreteOutputPin FLProgPin_5(5, 0, 0);
+FlprogDiscreteOutputPin FLProgPin_2(2, 0, 0);
+int16_t Out_76811112_235605003;
+int16_t Out_199374380_235605003;
+int16_t Out_246440495_235605003;
+int16_t Out_155596133_235605003;
+String Out_197427596_235605003;
+String Out_133790452_235605003;
+bool Out_73940294_235605003;
+bool Out_20516483_235605003;
+bool _gen1I = 0;
+bool _gen1O = 0;
+uint32_t _gen1P = 0UL;
+uint32_t _dht1LRT = 0UL;
+uint32_t _dht1Tti = 0UL;
+bool _trgt1 = 0;
+bool _trgt1I = 0;
+bool _trgt2 = 0;
+bool _trgt2I = 0;
+String _swi1;
+uint32_t _d18x2x1Tti = 0UL;
+float _d18x2x1O = 0.00;
+String _swi2;
+uint32_t _d18x2x2Tti = 0UL;
+float _d18x2x2O = 0.00;
+float _tempVariable_float;
+void setup()
+{
+    WiFi.mode(WIFI_STA);
+    WiFi.disconnect ();
+    if (esp_now_init() != 0)  return;
+    esp_now_set_self_role(ESP_NOW_ROLE_CONTROLLER);
+    esp_now_set_self_role(ESP_NOW_ROLE_SLAVE);
+    esp_now_register_send_cb(OnDataSent235605003);
+    RT_HW_Base.shed.quick.qnt = 5;
+    RT_HW_Base.shed.fast.qnt = 4;
+    RT_HW_Base.shed.slow.qnt = 4;
+    RT_HW_Base.shed.back.qnt = 5;
+    RT_HW_Base.shed.frdm.qnt = 1;
+    _dht1.setup(14);
+    _dht1LRT = millis();
+    _dht1Tti = millis();
+    esp_now_add_peer(broadcastAddress235605003, ESP_NOW_ROLE_SLAVE, 1, NULL, 0);
+    esp_now_register_recv_cb(OnDataRecv235605003);
+    flprog::specialSetup();
+}
+void loop()
+{
+    RT_HW_Base.sheduler();
+    flprog::specialPool();
+    //Плата:1
+    if (RT_HW_Base.shed.frdm.num == 1) 
+    {
+        if(flprog::isTimer(_dht1Tti, 10000)) 
+        {
+            if(flprog::isTimer(_dht1LRT,(_dht1.getMinimumSamplingPeriod()))) 
+            {
+                _dht1.readSensor();
+                _dht1LRT = millis();
+                _dht1Tti = millis();
+            }
+        }
+        FLProgPin_0.digitalWrite(((((int(_dht1.temperature))) < (12)) || (((int(_dht1.temperature))) > (38))));
+        if (1) 
+        {
+             if (! _gen1I) 
+            {
+                _gen1I = 1;
+                _gen1O = 1;
+                _gen1P = millis();
+            }
+        }
+         else 
+        {
+            _gen1I = 0 ;
+            _gen1O= 0;
+        }
+        if (_gen1I) 
+        {
+              if (flprog::isTimer (_gen1P , 1000)) 
+            {
+                 _gen1P = millis();
+                _gen1O = ! _gen1O;
+            }
+        }
+        FLProgPin_15.digitalWrite(_gen1O);
+        if(flprog::isTimer(_d18x2x1Tti, 10000)) 
+        {
+            _d18x2x1Tti = millis();
+            _tempVariable_float =  _readDS18_ow4(_d18x2x1Addr, 0);
+            if (_tempVariable_float < 500) 
+            {
+                _d18x2x1O = _tempVariable_float;
+            }
+        }
+        if(flprog::isTimer(_d18x2x2Tti, 10000)) 
+        {
+            _d18x2x2Tti = millis();
+            _tempVariable_float =  _readDS18_ow4(_d18x2x2Addr, 0);
+            if (_tempVariable_float < 500) 
+            {
+                _d18x2x2O = _tempVariable_float;
+            }
+        }
+             if ((_gen1O)) 
+        {
+            if(st235605003)
+            {
+                st235605003 = false;
+                (_gtv1).toCharArray(char_arraya235605003, (_gtv1).length() + 1);
+                strcpy(myData235605003.a235605003, char_arraya235605003);
+                (_gtv2).toCharArray(char_arrayb235605003, (_gtv2).length() + 1);
+                strcpy(myData235605003.b235605003, char_arrayb235605003);
+                myData235605003.c235605003= ((int(_dht1.temperature)));
+                myData235605003.d235605003= ((int(_dht1.humidity)));
+                myData235605003.e235605003= ((int((_d18x2x1O))));
+                myData235605003.f235605003= ((int((_d18x2x2O))));
+                myData235605003.k235605003 = (0);
+                myData235605003.m235605003 = (0);
+                esp_now_send(broadcastAddress235605003, (uint8_t *) &myData235605003, sizeof(myData235605003));
+            }
+        }
+        else st235605003 = true;
+        bool  _tmp2 = Out_20516483_235605003;
+        if (_tmp2)  
+        {
+             if (! _trgt2I) _trgt2 = ! _trgt2;
+        }
+        _trgt2I = _tmp2;
+        FLProgPin_2.digitalWrite(_trgt2);
+        if(_trgt2)
+        {
+            _swi1=String("on");
+        }
+        else
+        {
+            _swi1=String("off");
+        }
+        _gtv2 = _swi1;
+        bool  _tmp1 = Out_73940294_235605003;
+        if (_tmp1)  
+        {
+             if (! _trgt1I) _trgt1 = ! _trgt1;
+        }
+        _trgt1I = _tmp1;
+        FLProgPin_5.digitalWrite(_trgt1);
+        if(_trgt1)
+        {
+            _swi2=String("on");
+        }
+        else
+        {
+            _swi2=String("off");
+        }
+        _gtv1 = _swi2;
+    }
+}
+float _convertDS18x2xData(byte type_s, byte data[12])
+{
+    int16_t raw = (data[1] << 8) | data[0];
+    if (type_s)
+    {
+        raw = raw << 3;
+        if (data[7] == 0x10) 
+        {
+             raw = (raw & 0xFFF0) + 12 - data[6];
+        }
+    }
+    else
+    {
+        byte cfg = (data[4] & 0x60);
+        if (cfg == 0x00)raw = raw & ~7;
+        else if(cfg == 0x20)raw = raw & ~3;
+        else if(cfg == 0x40) raw = raw & ~1;
+    }
+    return  (float)raw / 16.0;
+}
+float _readDS18_ow4(byte addr[8], byte type_s)
+{
+    byte data[12];
+    byte i;
+    _ow4.reset();
+    _ow4.select(addr);
+    _ow4.write(0xBE);
+    for (i = 0; i < 9; i++) 
+    {
+         data[i] = _ow4.read();
+    }
+    _ow4.reset();
+    _ow4.select(addr);
+    _ow4.write(0x44);
+    if (_ow4.crc8(data, 8) != data[8])
+    {
+        return 501;
+    }
+    return _convertDS18x2xData(type_s, data);
+}
+void OnDataRecv235605003(uint8_t * mac, uint8_t *incomingData, uint8_t len) 
+{
+    memcpy(&_myData235605003, incomingData, sizeof(_myData235605003));
+    Out_197427596_235605003 = String(_myData235605003.a235605003);
+    Out_133790452_235605003 = String(_myData235605003.b235605003);
+    Out_76811112_235605003 = _myData235605003.c235605003;
+    Out_199374380_235605003 = _myData235605003.d235605003;
+    Out_246440495_235605003 = _myData235605003.e235605003;
+    Out_155596133_235605003 = _myData235605003.f235605003;
+    Out_73940294_235605003 = _myData235605003.k235605003;
+    Out_20516483_235605003 = _myData235605003.m235605003;
+}
+void OnDataSent235605003(uint8_t *mac_addr, uint8_t sendStatus) 
+{
+}
