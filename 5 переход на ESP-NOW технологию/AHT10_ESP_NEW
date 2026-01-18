@@ -1,0 +1,213 @@
+#include "Thinary_AHT10.h"
+#include <Wire.h>
+#include "flprogUtilites.h"
+extern "C" 
+{
+    #include "user_interface.h"
+}
+float TEMP_121442764_1;
+float HUMI_121442764_1;
+AHT10Class AHT10_121442764_1;
+String _nextionSaveDataTXT_P0_E5;
+String _nextionSaveDataTXT_P0_E6;
+struct _nextionLissenStruct
+{
+    char code;
+    String result;
+    long number;
+}
+;
+_nextionLissenStruct _nextionTempLissen;
+bool _changeNumber1_Out = 0;
+float _changeNumber1_OLV;
+bool _nextionSetAttr3_isNU = 0;
+bool _nextionSetAttr3_oldState = 0;
+bool _nextionSetAttr1_isNU = 0;
+bool _nextionSetAttr1_oldState = 0;
+bool _changeNumber2_Out = 0;
+float _changeNumber2_OLV;
+String _tempVariable_String;
+float _tempVariable_float;
+void setup()
+{
+    _startUart0();
+    nextionSendCommand("", 0);
+    nextionSendCommand("page 0", 0);
+    Wire.begin();
+    if(AHT10_121442764_1.begin(eAHT10Address_Low))
+    TEMP_121442764_1=('OK'),HUMI_121442764_1=('OK');
+    else
+    TEMP_121442764_1=NAN;
+    HUMI_121442764_1=NAN;
+}
+void loop()
+{
+    //Плата:1
+      delay(1000);
+    TEMP_121442764_1=AHT10_121442764_1.GetTemperature();
+    HUMI_121442764_1=AHT10_121442764_1.GetHumidity();
+    if (_changeNumber2_Out) 
+    {
+        _changeNumber2_Out = 0;
+    }
+     else 
+    {
+        _tempVariable_float = HUMI_121442764_1;
+        if (_tempVariable_float != _changeNumber2_OLV) 
+        {
+            _changeNumber2_OLV = _tempVariable_float;
+            _changeNumber2_Out = 1;
+        }
+    }
+    if (_changeNumber2_Out) 
+    {
+         if (! _nextionSetAttr3_oldState) 
+        {
+            _nextionSetAttr3_oldState = 1;
+            _nextionSetAttr3_isNU = 1;
+            _nextionSaveDataTXT_P0_E6 =(_floatToStringWitRaz(HUMI_121442764_1,2)) ;
+        }
+    }
+     else 
+    {
+        _nextionSetAttr3_oldState = 0;
+    }
+    if (_nextionSetAttr3_isNU) 
+    {
+        _tempVariable_String = String("page0.t5.txt=\"") +_nextionSaveDataTXT_P0_E6 +String("\"");
+        nextionSendCommand(_tempVariable_String.c_str(), 0);
+        _nextionSetAttr3_isNU = 0;
+    }
+    if (_changeNumber1_Out) 
+    {
+        _changeNumber1_Out = 0;
+    }
+     else 
+    {
+        _tempVariable_float = TEMP_121442764_1;
+        if (_tempVariable_float != _changeNumber1_OLV) 
+        {
+            _changeNumber1_OLV = _tempVariable_float;
+            _changeNumber1_Out = 1;
+        }
+    }
+    if (_changeNumber1_Out) 
+    {
+         if (! _nextionSetAttr1_oldState) 
+        {
+            _nextionSetAttr1_oldState = 1;
+            _nextionSetAttr1_isNU = 1;
+            _nextionSaveDataTXT_P0_E5 =(_floatToStringWitRaz(TEMP_121442764_1,2)) ;
+        }
+    }
+     else 
+    {
+        _nextionSetAttr1_oldState = 0;
+    }
+    if (_nextionSetAttr1_isNU) 
+    {
+        _tempVariable_String = String("page0.t4.txt=\"") +_nextionSaveDataTXT_P0_E5 +String("\"");
+        nextionSendCommand(_tempVariable_String.c_str(), 0);
+        _nextionSetAttr1_isNU = 0;
+    }
+}
+String  _floatToStringWitRaz(float value, int raz)
+{
+    return String(value,raz);
+}
+struct _nextionLissenStruct nextionSendCommand(const char* cmd, byte port)
+{
+    while (Serial.available())
+    {
+        Serial.read();
+    }
+    Serial.print(cmd);
+    Serial.write(0xFF);
+    Serial.write(0xFF);
+    Serial.write(0xFF);
+    return nextionListen(port);
+}
+struct _nextionLissenStruct nextionListen(byte port)
+{
+    byte _bite;
+    byte _end = 0xff;
+    byte cmd[100];
+    int index = 0;
+    _nextionLissenStruct temp;
+    temp.result = "";
+    temp.code = 'z';
+    temp.number = 0;
+    int countEnd = 0;
+    delay(50);
+    long startTime = millis();
+    while(! (countEnd==3)) 
+    {
+        while(Serial.available()>0)
+        {
+            if(Serial.available()>0)
+            {
+                _bite = Serial.read();
+                cmd[index] = _bite;
+                index++;
+                if(_bite == _end)
+                {
+                    countEnd++;
+                }
+                if(countEnd == 3)
+                {
+                    break;
+                }
+            }
+        }
+        if(flprog::isTimer(startTime, 100)) 
+        {
+            return temp;
+        }
+    }
+    switch (cmd[0]) 
+    {
+        case 0x66:
+        temp.code = 'f';
+        temp.result = String(cmd[1], DEC);
+        	return temp;
+        	break;
+        case 0x70:
+        temp.code = 'p';
+        	for (int i = 1; i < index - 3; i++) 
+        {
+            	temp.result += char(cmd[i]);
+        }
+        	return temp;
+        	break;
+        case 0x71:
+        temp.code = 'q';
+        	temp.number =  uint32_t(cmd[4]) << 24 | uint32_t(cmd[3]) << 16 | uint32_t(cmd[2]) << 8 | uint32_t(cmd[1]);
+        	return temp;
+        	break;
+        default:
+        	return temp;
+        	break;
+    }
+    	
+    return temp;
+}
+int nextionAskPageNamper(byte port)
+{
+    int result;
+    _nextionLissenStruct temp;
+    temp =  nextionSendCommand("sendme",port);
+    if((temp.code == 'f')&&(temp.result != ""))
+    {
+        result = temp.result.toInt();
+    }
+     else 
+    {
+        result = -1;
+    }
+    return result;
+}
+void _startUart0()
+{
+    int code= 6;
+    Serial.begin(9600, (flprog::serialModeFromInt(code)));
+}
