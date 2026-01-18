@@ -1,0 +1,120 @@
+#include <microDS18B20.h>
+#include <ESP8266WiFi.h>
+#include <espnow.h>
+
+
+MicroDS18B20<0> sensor1;
+
+uint8_t broadcastAddress1[6] = {0x00,0x00,0x00,0x00,0x00,0x00};
+
+typedef struct test_struct
+{
+  float temp;
+  boolean error;
+  byte id;
+} test_struct;
+
+test_struct test;
+
+unsigned long lastTime = 0;
+unsigned long timerDelay = 2000; // таймер задержки
+
+constexpr char WIFI_SSID[] = "esp_001";
+
+void restart()
+{
+  Serial.println("Restart ESP...");
+  ESP.restart();
+}
+
+// сообщение, если данные отправлены
+void OnDataSent(uint8_t *mac_addr, uint8_t sendStatus)
+{
+  static int count;
+  char macStr[18];
+  Serial.print("Packet to:");
+  snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
+           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+  Serial.print(macStr);
+  Serial.print(" send status: ");
+  if (sendStatus == 0)
+  {
+    Serial.println("Delivery success");
+    count = 0;
+  }
+  else
+  {
+    Serial.print("Delivery fail  ");
+    count++;
+    if (count > 10)
+    {
+      restart();
+    }
+    Serial.println(count);
+  }
+}
+
+int32_t getWiFiChannel(const char *ssid)
+{
+  if (int32_t n = WiFi.scanNetworks())
+  {
+    for (uint8_t i = 0; i < n; i++)
+    {
+      if (!strcmp(ssid, WiFi.SSID(i).c_str()))
+      {
+        memcpy(&broadcastAddress1, WiFi.BSSID(i), 6);
+        return WiFi.channel(i);
+      }
+    }
+  }
+  return 0;
+}
+
+void setup()
+{
+  Serial.begin(74880);
+
+  WiFi.mode(WIFI_STA);
+
+  if (esp_now_init() != 0)
+  {
+    Serial.println("Error initializing ESP-NOW");
+    restart();
+  }
+
+  int32_t channel = getWiFiChannel(WIFI_SSID);
+  wifi_set_channel(channel);
+
+  esp_now_set_self_role(ESP_NOW_ROLE_CONTROLLER);
+  //получаем состояние отправки пакета
+  esp_now_register_send_cb(OnDataSent);
+
+  // регистрируем платы в сети
+  esp_now_add_peer(broadcastAddress1, ESP_NOW_ROLE_SLAVE, 1, NULL, 0);
+
+  test.id = 1;
+}
+
+void loop()
+{
+  if ((millis() - lastTime) > timerDelay)
+  {
+    // Set values to send
+    if (sensor1.readTemp())
+    {
+      test.temp = sensor1.getTemp();
+      test.error = false;
+      Serial.println(test.temp);
+    }
+    else
+    {
+      test.error = true;
+      Serial.println("error");
+    }
+
+    // Отправляем сообщение
+    esp_now_send(0, (uint8_t *)&test, sizeof(test));
+    lastTime = millis();
+    sensor1.requestTemp();
+  }
+}
