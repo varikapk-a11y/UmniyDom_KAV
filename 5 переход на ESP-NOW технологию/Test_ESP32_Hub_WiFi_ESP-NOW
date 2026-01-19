@@ -1,5 +1,5 @@
 // ======================================================================
-// НАЗВАНИЕ: Test_Hub_WiFi_ESP-NOW_Final.ino
+// НАЗВАНИЕ: Test_ESP32_Hub_WiFi_ESP-NOW.ino
 // ВЕРСИЯ: 1.0 для ESP32 Arduino Core 3.3.5+
 // УСТРОЙСТВО: ESP32-WROOM (или любой ESP32 с Wi-Fi)
 // ФУНКЦИЯ: 1. Создаёт Wi-Fi сеть "ESP32-Hub-Test"
