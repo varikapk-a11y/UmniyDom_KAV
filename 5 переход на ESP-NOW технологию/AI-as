@@ -1,65 +1,136 @@
-Исправленное и дополненное техническое задание для AI-ассистента
-Проект: ESP32-Hub (управляющее устройство). Цель: Веб-интерфейс + ESP-NOW для управления удалённым узлом (ESP32-C3).
+ТЕХНИЧЕСКОЕ ЗАДАНИЕ для AI-ассистента (Полная отладка проекта ESP-NOW)
+Проект: ESP32-Hub на PlatformIO. Цель: Создать с нуля стабильно собирающийся проект для хаба с веб-интерфейсом и ESP-NOW.
 
-1. Текущее состояние проекта:
+1. Исходные данные и история проблемы
+Исходный рабочий код: Имеется полностью функциональный скетч для Arduino IDE, который работал с ядром ESP32 версии ~3.3.6 и библиотеками (ESPAsyncWebServer, AsyncTCP, ArduinoJson 6.x). Код адаптирован под новый API ESP-NOW (использует esp_now_send_info_t, esp_now_recv_info_t).
 
-Код: Имеется рабочий, исправленный скетч для Arduino IDE, успешно управляющий узлом. Код адаптирован под новое API ESP-NOW (Core 3.4.0+).
+Проблема: Попытка переноса в PlatformIO приводит к циклическим ошибкам из-за конфликтов библиотек и неправильного разрешения зависимостей. Основные ошибки:
 
-Проблема: Перенос проекта в PlatformIO вызывает непрерывные ошибки сборки из-за установки несовместимых версий библиотек и их конфликтов.
+Несовместимая библиотека AsyncTCP: PlatformIO устанавливает AsyncTCP_RP2040W (для Raspberry Pi Pico W) вместо библиотеки для ESP32. Ошибка: #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only.
+Конфликт веб-серверов: Менеджер зависимостей (LDF) подключает стандартную синхронную библиотеку WebServer (из ядра ESP32), которая конфликтует с асинхронной ESPAsyncWebServer. Это приводит к ошибкам вида fatal error: WiFiServer.h: No such file or directory.
+Плавающие версии: Указание библиотек без явной версии (ESP Async WebServer, AsyncTCP) приводит к установке случайных, часто несовместимых версий.
+2. Рабочий код (исходник для переноса)
+Вот исправленный код, который должен лечь в основу нового проекта. Он уже адаптирован под новый API ESP-NOW и свободен от старых ошибок Arduino IDE.
 
-2. Конкретные ошибки, которые необходимо устранить:
+cpp
+// ======== НАЧАЛО КОДА (файл src/main.cpp) ========
+#include <WiFi.h>
+#include <ESPAsyncWebServer.h>
+#include <esp_now.h>
+#include <ArduinoJson.h>
 
-Установка несовместимых библиотек:
+// Конфигурация
+const char* AP_SSID = "ESP32-Hub-Test";
+const char* AP_PASSWORD = "test12345678";
+uint8_t nodeMacAddress[] = {0xAC, 0xEB, 0xE6, 0x49, 0x10, 0x28}; // MAC узла
 
-AsyncTCP_RP2040W (для Raspberry Pi Pico W) вместо нужной ESP32 Async TCP для ESP32. Ошибка: #error For RASPBERRY_PI_PICO_W board....
+// Структура ESP-NOW
+typedef struct esp_now_message {
+    char command[16];
+    uint8_t sender_id;
+} esp_now_message;
 
-Несовместимая версия ArduinoJson (устанавливается 7.x, а код написан под API 6.x).
+esp_now_message outgoingMessage;
+esp_now_message incomingMessage;
 
-Конфликт библиотек веб-серверов: LDF подтягивает стандартную WebServer, что конфликтует с ESP Async WebServer. Ошибка: fatal error: WiFiServer.h: No such file....
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
 
-3. Требования к конечному решению (КРИТИЧЕСКИ ВАЖНО):
+// Прототипы функций с новым API ESP-NOW
+void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
+void onEspNowDataSent(const esp_now_send_info_t *send_info, esp_now_send_status_t status);
+void onEspNowDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingData, int len);
+void sendCommandToNode(String cmd);
+void broadcastStatus(String statusText);
 
-Код: Остаётся без функциональных изменений. Требуется анализ и удаление лишних #include.
+void setup() {
+    Serial.begin(115200);
+    delay(1000);
+    Serial.println("\n=== ESP-NOW HUB (PlatformIO) ===");
 
-Конфигурация PlatformIO (platformio.ini): Должна ЖЁСТКО ФИКСИРОВАТЬ совместимые версии библиотек для ESP32. Это основная мера для предотвращения ошибок.
+    // 1. Запуск Wi-Fi точки доступа
+    WiFi.mode(WIFI_AP);
+    if (!WiFi.softAP(AP_SSID, AP_PASSWORD)) {
+        Serial.println("AP Failed");
+        while(1);
+    }
+    Serial.print("AP IP: ");
+    Serial.println(WiFi.softAPIP());
 
-Требуемые библиотеки и версии:
+    // 2. Инициализация веб-сервера и WebSocket
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+        // Здесь должна быть HTML-страница с кнопками и JS для WebSocket
+        request->send(200, "text/html", "<html>...полный HTML код...</html>");
+    });
+    ws.onEvent(onWebSocketEvent);
+    server.addHandler(&ws);
+    server.begin();
+
+    // 3. Инициализация ESP-NOW (ВАЖНО: режим AP+STA)
+    WiFi.mode(WIFI_AP_STA);
+    if (esp_now_init() != ESP_OK) {
+        Serial.println("ESP-NOW Init Failed");
+        while(1);
+    }
+    esp_now_register_send_cb(onEspNowDataSent);
+    esp_now_register_recv_cb(onEspNowDataRecv);
+
+    esp_now_peer_info_t peerInfo = {};
+    memcpy(peerInfo.peer_addr, nodeMacAddress, 6);
+    peerInfo.channel = 0;
+    peerInfo.encrypt = false;
+    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+        Serial.println("Failed to add peer");
+    }
+    Serial.println("Setup complete.");
+}
+
+void loop() {
+    ws.cleanupClients();
+    delay(10);
+}
+
+// ... (реализации функций onWebSocketEvent, sendCommandToNode,
+// onEspNowDataSent, onEspNowDataRecv, broadcastStatus)
+// ======== КОНЕЦ КОДА ========
+3. Требования к решению (что должен сделать AI)
+Цель: Получить абсолютно чистый проект PlatformIO, который собирается с первой команды pio run без ошибок.
+
+Проанализировать код: Проверить предоставленный код на наличие скрытых проблем, которые могут вызывать конфликты (например, неявные зависимости).
+
+Создать эталонный platformio.ini: Предоставить единственную, рабочую конфигурацию, которая гарантированно решает все предыдущие проблемы. Конфигурация должна:
+
+Жёстко фиксировать версии совместимых библиотек.
+
+Исключить использование lib_ldf_mode (или использовать только безопасный режим chain).
+
+Явно указывать нужную платформу и фреймворк.
+
+Требуемый блок lib_deps:
 
 ini
 lib_deps =
     me-no-dev/ESPAsyncWebServer @ 3.0.6
     ESP32 Async TCP @ 1.2.2
     bblanchon/ArduinoJson @ 6.21.3
-Обоснование:
+Обоснование: ESP32 Async TCP @ 1.2.2 — единственная гарантированно совместимая версия для ESP32 (не Pico). ArduinoJson @ 6.21.3 — код использует API v6.
 
-ESP32 Async TCP @ 1.2.2 — гарантированно совместимая версия для ESP32, а не для RP2040.
+Предоставить пошаговый план создания проекта с нуля:
 
-bblanchon/ArduinoJson @ 6.21.3 — код проекта использует API версии 6.x.
+Шаг 1: В VS Code через PlatformIO Home создать новый проект ESP32_Hub_Final для платы Espressif ESP32 Dev Module, фреймворк Arduino.
 
-Явное указание @ <версия> блокирует установку любых других версий.
+Шаг 2: Заменить содержимое файла platformio.ini на предоставленную эталонную конфигурацию.
 
-Структура проекта: В папке src/ не должно быть файлов библиотек (.cpp, .h). Только пользовательский код.
+Шаг 3: Полностью очистить папку src/ и поместить туда файл main.cpp с предоставленным кодом.
 
-4. Задача для ассистента:
+Шаг 4: Выполнить команду pio run --target clean в терминале PlatformIO.
 
-Провести анализ: Изучить текущие platformio.ini и код в src/. Найти причины подтягивания WebServer и AsyncTCP_RP2040W.
+Шаг 5: Запустить сборку (pio run или кнопка Build).
 
-Предложить финальные исправления:
+4. Критерии успеха
+Процесс: Сборка проходит от начала до конца без ошибок компиляции и линковки.
 
-Для platformio.ini: Предоставить готовый блок lib_deps с фиксированными версиями, как указано выше.
+Лог: В выводе терминала PlatformIO чётко видно установку именно указанных версий библиотек: ESPAsyncWebServer @ 3.0.6, ESP32 Async TCP @ 1.2.2, ArduinoJson @ 6.21.3.
 
-Для кода: Удалить все #include <WebServer.h> и #include <WiFiServer.h>, оставив только #include <ESPAsyncWebServer.h>.
+Результат: В папке .pio/libdeps/esp32dev/ отсутствуют папки AsyncTCP_RP2040W и WebServer. Проект готов к загрузке на ESP32.
 
-Предоставить чёткий план: Пошаговый чек-лист для пользователя:
-
-Шаг 1: Обновить platformio.ini.
-
-Шаг 2: Выполнить pio run --target clean.
-
-Шаг 3: Удалить папку .pio/libdeps/esp32dev.
-
-Шаг 4: Перезапустить VS Code.
-
-Шаг 5: Запустить сборку.
-
-5. Критерий успеха: Сборка (pio run) завершается без ошибок. В логе видна установка именно указанных версий библиотек.
