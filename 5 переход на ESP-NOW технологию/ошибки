@@ -1,165 +1,3 @@
- Выполнение задачи в папке ESP32_Hub_ESP-NOW: C:\Users\sasa\.platformio\penv\Scripts\platformio.exe run 
-
-Processing esp32dev (platform: espressif32; board: esp32dev; framework: arduino)
---------------------------------------------------------------------------------------------------------------Verbose mode can be enabled via `-v, --verbose` option
-CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32dev.html
-PLATFORM: Espressif 32 (6.12.0) > Espressif ESP32 Dev Module
-HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
-DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-mex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
-PACKAGES:
- - framework-arduinoespressif32 @ 3.20017.241212+sha.dcc1105b
- - tool-esptoolpy @ 2.40900.250804 (4.9.0)
- - toolchain-xtensa-esp32 @ 8.4.0+2021r2-patch5
-Converting main.ino
-LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
-LDF Modes: Finder ~ chain, Compatibility ~ soft
-Found 39 compatible libraries
-Scanning dependencies...
-Dependency Graph
-|-- ESP Async WebServer @ 3.0.6
-|-- AsyncTCP @ 3.4.10
-|-- ArduinoJson @ 7.4.2
-|-- ArduinoOTA @ 3.3.6+sha.6cfa93f
-Building in release mode
-Compiling .pio\build\esp32dev\src\main.ino.cpp.o
-Building .pio\build\esp32dev\bootloader.bin
-Generating partitions .pio\build\esp32dev\partitions.bin
-Compiling .pio\build\esp32dev\lib3c3\Async TCP\AsyncTCP.cpp.o
-esptool.py v4.9.0
-Creating esp32 image...
-Merged 1 ELF section
-Successfully created esp32 image.
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncPrinter.cpp.o
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W.cpp.o
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W_buffer.cpp.o
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\SyncClient.cpp.o
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\cbuf.cpp.o
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\debug.cpp.o
-In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncPrinter.h:51,
-                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncPrinter.cpp:51:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W boar WiFi only
-   #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
-    ^~~~~
-In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W_buffer.h:60,
-                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W_buffer.cpp:58:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W boar WiFi only
-   #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
-    ^~~~~
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\tcp_axtls.c.o
-In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:104:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W boar WiFi only
-   #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
-    ^~~~~
-In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.cpp:53:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W boar WiFi only
-   #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
-    ^~~~~
-In file included from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/clude/lwip/opt.h:51,
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/clude/lwip/ip_addr.h:40,
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/clude/tcpip_adapter_types.h:18,
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/clude/tcpip_adapter.h:24,
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/e/esp_netif.h:35,
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/e/esp_event_legacy.h:22,
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/e/esp_event.h:28,
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiG
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiS
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFi.
-                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:84,
-                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.cpp:53:
-C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/port/esp32/includ: warning: "TCP_MSS" redefined
- #define TCP_MSS                         CONFIG_LWIP_TCP_MSS
- 
-In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:60,
-                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.cpp:52:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35: note: this is the location of the previous defin
-   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
-
-Compiling .pio\build\esp32dev\lib418\FS\FS.cpp.o
-Archiving .pio\build\esp32dev\lib3c3\libAsync TCP.a
-*** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncPrinter.cpp.o] Error 1
-In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:60,
-                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.cpp:52:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35:25: error: 'MBED_CONF_LWIP_TCP_MSS' was not declae
-   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
-                         ^~~~~~~~~~~~~~~~~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:86:34: note: in expansion of macro 'TCP_MSS'
-     SyncClient(size_t txBufLen = TCP_MSS);
-                                  ^~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35:25: note: suggested alternative: 'CONFIG_LWIP_TCP
-   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
-                         ^~~~~~~~~~~~~~~~~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:86:34: note: in expansion of macro 'TCP_MSS'
-     SyncClient(size_t txBufLen = TCP_MSS);
-                                  ^~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35:25: error: 'MBED_CONF_LWIP_TCP_MSS' was not declae
-   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
-                         ^~~~~~~~~~~~~~~~~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:87:55: note: in expansion of macro 'TCP_MSS'
-     SyncClient(AsyncClient *client, size_t txBufLen = TCP_MSS);
-                                                       ^~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35:25: note: suggested alternative: 'CONFIG_LWIP_TCP
-   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
-                         ^~~~~~~~~~~~~~~~~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:87:55: note: in expansion of macro 'TCP_MSS'
-     SyncClient(AsyncClient *client, size_t txBufLen = TCP_MSS);
-                                                       ^~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'bool AsyncClient::connect16_t)':
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:331:8: error: 'ip_addr_t' {aka 'struct ip_addr named 'addr'; did you mean 'u_addr'?
-   addr.addr = ip;
-        ^~~~
-        u_addr
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'bool AsyncClient::connectnt16_t)':
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:390:42: error: 'ip_addr_t' {aka 'struct ip_addr named 'addr'; did you mean 'u_addr'?
-     returnValue = connect(IPAddress(addr.addr), port);
-                                          ^~~~
-                                          u_addr
-In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:109,
-                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:104:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:393:73: error: 'ip_addr_t' {aka 'struct ip_addr named 'addr'; did you mean 'u_addr'?
-     ATCP_LOGDEBUG3("connect: dns_gethostbyname => IP =", IPAddress(addr.addr), ", returnValue = ", returnValuLSE");
-                                                                         ^~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W_Debug.h:87:128: note: in definition of macro 'ATCP
- #define ATCP_LOGDEBUG3(x,y,z,w)  if(_ASYNCTCP_RP2040W_LOGLEVEL_>3) { ATCP_PRINT_MARK; ATCP_PRINT(x); ATCP_PRIT(y); ATCP_PRINT_SP; ATCP_PRINT(z); ATCP_PRINT_SP; ATCP_PRINTLN(w); }
-
-  ^
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'bool AsyncClient::operatolient&)':
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:468:66: error: 'ip_addr_t' {aka 'struct ip_addr named 'addr'; did you mean 'u_addr'?
-   return (_pcb != NULL && other._pcb != NULL && (_pcb->remote_ip.addr == other._pcb->remote_ip.addr) &&
-                                                                  ^~~~
-                                                                  u_addr
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:468:96: error: 'ip_addr_t' {aka 'struct ip_addr named 'addr'; did you mean 'u_addr'?
-   return (_pcb != NULL && other._pcb != NULL && (_pcb->remote_ip.addr == other._pcb->remote_ip.addr) &&
-                                                                                                ^~~~
-                                                                                                u_addr
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'void AsyncClient::_dns_fo:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:1027:26: error: 'ip_addr_t' {aka 'struct ip_ader named 'addr'; did you mean 'u_addr'?
-     connect(IPAddress(p->addr), _connect_port);
-                          ^~~~
-                          u_addr
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'uint32_t AsyncClient::get:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:1236:26: error: 'ip_addr_t' {aka 'struct ip_ader named 'addr'; did you mean 'u_addr'?
-   return _pcb->remote_ip.addr;
-                          ^~~~
-                          u_addr
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'uint32_t AsyncClient::get.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:1256:25: error: 'ip_addr_t' {aka 'struct ip_ader named 'addr'; did you mean 'u_addr'?
-   return _pcb->local_ip.addr;
-                         ^~~~
-                         u_addr
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'void AsyncServer::begin()
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:1721:14: error: 'ip_addr_t' {aka 'struct ip_ader named 'addr'; did you mean 'u_addr'?
-   local_addr.addr = (uint32_t) _addr;
-              ^~~~
-              u_addr
-*** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W_buffer.cpp.o] Error 1
-*** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W.cpp.o] Error 1
-*** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\SyncClient.cpp.o] Error 1
-================================================ [FAILED] Took 17.35 seconds =================================
-
- *  Процесс терминала "C:\Users\sasa\.platformio\penv\Scripts\platformio.exe 'run'" был завершен с кодом выход
- *  Терминал будет повторно использоваться задачами. Чтобы закрыть его, нажмите любую клавишу. 
-
- *  Выполнение задачи в папке ESP32_Hub_ESP-NOW: C:\Users\sasa\.platformio\penv\Scripts\platformio.exe run 
-
 Processing esp32dev (platform: espressif32; board: esp32dev; framework: arduino)
 ------------------------------------------------------------------------------------------------------------------------------------------------------Verbose mode can be enabled via `-v, --verbose` option
 CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32dev.html
@@ -173,83 +11,51 @@ PACKAGES:
 Converting main.ino
 LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
 LDF Modes: Finder ~ chain, Compatibility ~ soft
-Found 39 compatible libraries
+Library Manager: Installing ESP32 Async TCP @ 1.2.2
+Warning! Could not find the package with 'ESP32 Async TCP @ 1.2.2' requirements for your system 'windows_amd64'
+Found 37 compatible libraries
 Scanning dependencies...
 Dependency Graph
 |-- ESP Async WebServer @ 3.0.6
-|-- AsyncTCP @ 3.4.10
-|-- ArduinoJson @ 7.4.2
-|-- ArduinoOTA @ 3.3.6+sha.6cfa93f
+|-- ArduinoJson @ 6.21.3
 Building in release mode
 Compiling .pio\build\esp32dev\src\main.ino.cpp.o
+Building .pio\build\esp32dev\bootloader.bin
+Generating partitions .pio\build\esp32dev\partitions.bin
+esptool.py v4.9.0
+Creating esp32 image...
+Merged 1 ELF section
+Successfully created esp32 image.
+Compiling .pio\build\esp32dev\lib3c3\Async TCP\AsyncTCP.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFi.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiAP.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiClient.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiGeneric.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiMulti.cpp.o
+Archiving .pio\build\esp32dev\lib3c3\libAsync TCP.a
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiSTA.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiScan.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiServer.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiUdp.cpp.o
 Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncPrinter.cpp.o
 Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W.cpp.o
 Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W_buffer.cpp.o
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\SyncClient.cpp.o
-Compiling .pio\build\esp32dev\lib418\FS\vfs_api.cpp.o
-Compiling .pio\build\esp32dev\lib598\WebServer\Parsing.cpp.o
 In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncPrinter.h:51,
                  from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncPrinter.cpp:51:
+Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\SyncClient.cpp.o
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
    #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
     ^~~~~
+Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\cbuf.cpp.o
+Archiving .pio\build\esp32dev\lib279\libWiFi.a
+Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\debug.cpp.o
+Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\tcp_axtls.c.o
 In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:104:
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
    #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
     ^~~~~
-In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W_buffer.h:60,
-                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W_buffer.cpp:58:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
-   #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
-    ^~~~~
-In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.cpp:53:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
-   #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
-    ^~~~~
-In file included from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/lwip/src/include/lwip/opt.h:51,
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/lwip/src/include/lwip/ip_addr.h:40,                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/tcpip_adapter/include/tcpip_adapter_types.h:18,
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/tcpip_adapter/include/tcpip_adapter.h:24,
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_netif/include/esp_netif.h:35,       
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_event/include/esp_event_legacy.h:22,                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_event/include/esp_event.h:28,
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiGeneric.h:27,
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiSTA.h:28,
-                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFi.h:32,
-                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:84,
-                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.cpp:53:
-C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/port/esp32/include/lwipopts.h:439: warning: "TCP_MSS" redefined
- #define TCP_MSS                         CONFIG_LWIP_TCP_MSS
- 
-In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:60,
-                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.cpp:52:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35: note: this is the location of the previous definition
-   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
- 
-In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:60,
-                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.cpp:52:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35:25: error: 'MBED_CONF_LWIP_TCP_MSS' was not declared in this scope
-   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
-                         ^~~~~~~~~~~~~~~~~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:86:34: note: in expansion of macro 'TCP_MSS'
-     SyncClient(size_t txBufLen = TCP_MSS);
-                                  ^~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35:25: note: suggested alternative: 'CONFIG_LWIP_TCP_MSS'
-   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
-                         ^~~~~~~~~~~~~~~~~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:86:34: note: in expansion of macro 'TCP_MSS'
-     SyncClient(size_t txBufLen = TCP_MSS);
-                                  ^~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35:25: error: 'MBED_CONF_LWIP_TCP_MSS' was not declared in this scope
-   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
-                         ^~~~~~~~~~~~~~~~~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:87:55: note: in expansion of macro 'TCP_MSS'
-     SyncClient(AsyncClient *client, size_t txBufLen = TCP_MSS);
-                                                       ^~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35:25: note: suggested alternative: 'CONFIG_LWIP_TCP_MSS'
-   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
-                         ^~~~~~~~~~~~~~~~~~~~~~
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:87:55: note: in expansion of macro 'TCP_MSS'
-     SyncClient(AsyncClient *client, size_t txBufLen = TCP_MSS);
-                                                       ^~~~~~~
+Compiling .pio\build\esp32dev\lib418\FS\FS.cpp.o
+*** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncPrinter.cpp.o] Error 1
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'bool AsyncClient::connect(IPAddress, uint16_t)':
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:331:8: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you mean 'u_addr'?
    addr.addr = ip;
@@ -281,7 +87,6 @@ mean 'u_addr'?
    return (_pcb != NULL && other._pcb != NULL && (_pcb->remote_ip.addr == other._pcb->remote_ip.addr) &&
                                                                                                 ^~~~
                                                                                                 u_addr
-*** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncPrinter.cpp.o] Error 1
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'void AsyncClient::_dns_found(ip_addr_t*)':
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:1027:26: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you mean 'u_addr'?
      connect(IPAddress(p->addr), _connect_port);
@@ -302,80 +107,13 @@ mean 'u_addr'?
    local_addr.addr = (uint32_t) _addr;
               ^~~~
               u_addr
-*** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W_buffer.cpp.o] Error 1
 *** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W.cpp.o] Error 1
-*** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\SyncClient.cpp.o] Error 1
-C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/Parsing.cpp:24:10: fatal error: WiFiServer.h: No such file or 
-directory
-
-********************************************************************
-* Looking for WiFiServer.h dependency? Check our library registry!
-*
-* CLI  > platformio lib search "header:WiFiServer.h"
-* Web  > https://registry.platformio.org/search?q=header:WiFiServer.h
-*
-********************************************************************
-
- #include "WiFiServer.h"
-          ^~~~~~~~~~~~~~
-compilation terminated.
-*** [.pio\build\esp32dev\lib598\WebServer\Parsing.cpp.o] Error 1
-============================================================ [FAILED] Took 13.45 seconds ============================================================
-
- *  Процесс терминала "C:\Users\sasa\.platformio\penv\Scripts\platformio.exe 'run'" был завершен с кодом выхода 1. 
- *  Терминал будет повторно использоваться задачами. Чтобы закрыть его, нажмите любую клавишу. 
-
- *  Выполнение задачи в папке ESP32_Hub_ESP-NOW: C:\Users\sasa\.platformio\penv\Scripts\platformio.exe run 
-
-Processing esp32dev (platform: espressif32; board: esp32dev; framework: arduino)
-------------------------------------------------------------------------------------------------------------------------------------------------------Verbose mode can be enabled via `-v, --verbose` option
-CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32dev.html
-PLATFORM: Espressif 32 (6.12.0) > Espressif ESP32 Dev Module
-HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
-DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
-PACKAGES:
- - framework-arduinoespressif32 @ 3.20017.241212+sha.dcc1105b
- - tool-esptoolpy @ 2.40900.250804 (4.9.0)
- - toolchain-xtensa-esp32 @ 8.4.0+2021r2-patch5
-Converting main.ino
-LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
-LDF Modes: Finder ~ chain, Compatibility ~ soft
-Found 39 compatible libraries
-Scanning dependencies...
-Dependency Graph
-|-- ESP Async WebServer @ 3.0.6
-|-- AsyncTCP @ 3.4.10
-|-- ArduinoJson @ 7.4.2
-|-- ArduinoOTA @ 3.3.6+sha.6cfa93f
-Building in release mode
-Compiling .pio\build\esp32dev\src\main.ino.cpp.o
-Building .pio\build\esp32dev\bootloader.bin
-Generating partitions .pio\build\esp32dev\partitions.bin
-esptool.py v4.9.0
-Creating esp32 image...
-Merged 1 ELF section
-Successfully created esp32 image.
-Compiling .pio\build\esp32dev\lib3c3\Async TCP\AsyncTCP.cpp.o
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncPrinter.cpp.o
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W.cpp.o
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W_buffer.cpp.o
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\SyncClient.cpp.o
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\cbuf.cpp.o
-In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncPrinter.h:51,
-                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncPrinter.cpp:51:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
-   #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
-    ^~~~~
 In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W_buffer.h:60,
                  from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W_buffer.cpp:58:
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
    #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
     ^~~~~
 In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.cpp:53:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
-   #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
-    ^~~~~
-In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:104:
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
    #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
     ^~~~~
@@ -397,9 +135,6 @@ In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:60
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35: note: this is the location of the previous definition
    #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
 
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\debug.cpp.o
-Archiving .pio\build\esp32dev\lib3c3\libAsync TCP.a
-Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\tcp_axtls.c.o
 In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:60,
                  from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.cpp:52:
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35:25: error: 'MBED_CONF_LWIP_TCP_MSS' was not declared in this scope
@@ -426,34 +161,128 @@ In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:60
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:87:55: note: in expansion of macro 'TCP_MSS'
      SyncClient(AsyncClient *client, size_t txBufLen = TCP_MSS);
                                                        ^~~~~~~
+*** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W_buffer.cpp.o] Error 1
+*** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\SyncClient.cpp.o] Error 1
+C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.cpp:312:1: fatal error: opening dependency file .pio/build/esp32dev/lib418/FS/FS.cpp.d: No such file or directory
+ }
+ ^
+compilation terminated.
+*** [.pio\build\esp32dev\lib418\FS\FS.cpp.o] Error 1
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\UD_proekt_#1\\ESP32_Hub_ESP-NOW\\.pio\\build\\esp32dev\\.sconsign311.tmp':
+  File "C:\Users\sasa\.platformio\packages\tool-scons\scons-local-4.8.1\SCons\Script\Main.py", line 1508:
+    _exec_main(parser, values)
+  File "C:\Users\sasa\.platformio\packages\tool-scons\scons-local-4.8.1\SCons\Script\Main.py", line 1462:
+    _main(parser)
+  File "C:\Users\sasa\.platformio\packages\tool-scons\scons-local-4.8.1\SCons\Script\Main.py", line 1201:
+    nodes = _build_targets(fs, options, targets, target_top)
+  File "C:\Users\sasa\.platformio\packages\tool-scons\scons-local-4.8.1\SCons\Script\Main.py", line 1396:
+    jobs.run(postfunc = jobs_postfunc)
+  File "C:\Users\sasa\.platformio\packages\tool-scons\scons-local-4.8.1\SCons\Taskmaster\Job.py", line 114:
+    postfunc()
+  File "C:\Users\sasa\.platformio\packages\tool-scons\scons-local-4.8.1\SCons\Script\Main.py", line 1393:
+    SCons.SConsign.write()
+  File "C:\Users\sasa\.platformio\packages\tool-scons\scons-local-4.8.1\SCons\SConsign.py", line 131:
+    syncmethod()
+  File "C:\Users\sasa\.platformio\packages\tool-scons\scons-local-4.8.1\SCons\dblite.py", line 195:
+    with self._open(self._tmp_name, "wb", opener=self.opener) as f:
+  File "C:\Users\sasa\.platformio\packages\tool-scons\scons-local-4.8.1\SCons\dblite.py", line 177:
+    return os.open(path, flags, mode=self._mode)
+Exception ignored in: <function _Dblite.__del__ at 0x000001992464E700>
+Traceback (most recent call last):
+  File "C:\Users\sasa\.platformio\packages\tool-scons\scons-local-4.8.1\SCons\dblite.py", line 184, in __del__
+  File "C:\Users\sasa\.platformio\packages\tool-scons\scons-local-4.8.1\SCons\dblite.py", line 181, in close
+  File "C:\Users\sasa\.platformio\packages\tool-scons\scons-local-4.8.1\SCons\dblite.py", line 195, in sync
+  File "C:\Users\sasa\.platformio\packages\tool-scons\scons-local-4.8.1\SCons\dblite.py", line 177, in opener
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\UD_proekt_#1\\ESP32_Hub_ESP-NOW\\.pio\\build\\esp32dev\\.sconsign311.tmp'
+============================================================ [FAILED] Took 21.73 seconds ============================================================
+
+ *  Процесс терминала "C:\Users\sasa\.platformio\penv\Scripts\platformio.exe 'run', '--environment', 'esp32dev'" был завершен с кодом выхода 1. 
+ *  Терминал будет повторно использоваться задачами. Чтобы закрыть его, нажмите любую клавишу. 
+
+ *  Выполнение задачи в папке ESP32_Hub_ESP-NOW: C:\Users\sasa\.platformio\penv\Scripts\platformio.exe run --environment esp32dev 
+
+Processing esp32dev (platform: espressif32; board: esp32dev; framework: arduino)
+------------------------------------------------------------------------------------------------------------------------------------------------------Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32dev.html
+PLATFORM: Espressif 32 (6.12.0) > Espressif ESP32 Dev Module
+HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES:
+ - framework-arduinoespressif32 @ 3.20017.241212+sha.dcc1105b
+ - tool-esptoolpy @ 2.40900.250804 (4.9.0)
+ - toolchain-xtensa-esp32 @ 8.4.0+2021r2-patch5
+Converting main.ino
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Library Manager: Installing ESP32 Async TCP @ 1.2.2
+Warning! Could not find the package with 'ESP32 Async TCP @ 1.2.2' requirements for your system 'windows_amd64'
+Found 37 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- ESP Async WebServer @ 3.0.6
+|-- ArduinoJson @ 6.21.3
+Building in release mode
+Compiling .pio\build\esp32dev\src\main.ino.cpp.o
+Building .pio\build\esp32dev\bootloader.bin
+Generating partitions .pio\build\esp32dev\partitions.bin
+esptool.py v4.9.0
+Creating esp32 image...
+Merged 1 ELF section
+Successfully created esp32 image.
+Compiling .pio\build\esp32dev\lib3c3\Async TCP\AsyncTCP.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFi.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiAP.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiClient.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiGeneric.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiMulti.cpp.o
+Archiving .pio\build\esp32dev\lib3c3\libAsync TCP.a
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiSTA.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiScan.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiServer.cpp.o
+Compiling .pio\build\esp32dev\lib279\WiFi\WiFiUdp.cpp.o
+Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncPrinter.cpp.o
+Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W.cpp.o
+Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W_buffer.cpp.o
+Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\SyncClient.cpp.o
+Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\cbuf.cpp.o
+In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncPrinter.h:51,
+                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncPrinter.cpp:51:
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
+   #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
+    ^~~~~
+Archiving .pio\build\esp32dev\lib279\libWiFi.a
+Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\debug.cpp.o
+Compiling .pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\tcp_axtls.c.o
+Compiling .pio\build\esp32dev\lib418\FS\FS.cpp.o
+*** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncPrinter.cpp.o] Error 1
+In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:104:
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
+   #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
+    ^~~~~
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'bool AsyncClient::connect(IPAddress, uint16_t)':
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:331:8: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you mean 'u_addr'?
    addr.addr = ip;
         ^~~~
         u_addr
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'bool AsyncClient::connect(const char*, uint16_t)':
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:390:42: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you 
-mean 'u_addr'?
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:390:42: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you mean 'u_addr'?  
      returnValue = connect(IPAddress(addr.addr), port);
                                           ^~~~
                                           u_addr
 In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:109,
                  from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:104:
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:393:73: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you 
-mean 'u_addr'?
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:393:73: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you mean 'u_addr'?  
      ATCP_LOGDEBUG3("connect: dns_gethostbyname => IP =", IPAddress(addr.addr), ", returnValue = ", returnValue ? "TRUE" : "FALSE");
                                                                          ^~~~
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W_Debug.h:87:128: note: in definition of macro 'ATCP_LOGDEBUG3'
  #define ATCP_LOGDEBUG3(x,y,z,w)  if(_ASYNCTCP_RP2040W_LOGLEVEL_>3) { ATCP_PRINT_MARK; ATCP_PRINT(x); ATCP_PRINT_SP; ATCP_PRINT(y); ATCP_PRINT_SP; ATCP_PRINT(z); ATCP_PRINT_SP; ATCP_PRINTLN(w); }
                                                                                                                                 ^
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'bool AsyncClient::operator==(const AsyncClient&)':
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:468:66: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you 
-mean 'u_addr'?
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:468:66: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you mean 'u_addr'?  
    return (_pcb != NULL && other._pcb != NULL && (_pcb->remote_ip.addr == other._pcb->remote_ip.addr) &&
                                                                   ^~~~
                                                                   u_addr
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:468:96: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you 
-mean 'u_addr'?
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:468:96: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you mean 'u_addr'?  
    return (_pcb != NULL && other._pcb != NULL && (_pcb->remote_ip.addr == other._pcb->remote_ip.addr) &&
                                                                                                 ^~~~
                                                                                                 u_addr
@@ -463,23 +292,76 @@ mean 'u_addr'?
                           ^~~~
                           u_addr
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'uint32_t AsyncClient::getRemoteAddress()':
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:1236:26: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you mean 'u_addr'?
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:1236:26: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you mean 'u_addr'? 
    return _pcb->remote_ip.addr;
                           ^~~~
                           u_addr
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'uint32_t AsyncClient::getLocalAddress()':
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:1256:25: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you mean 'u_addr'?
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:1256:25: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you mean 'u_addr'? 
    return _pcb->local_ip.addr;
                          ^~~~
                          u_addr
 .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp: In member function 'void AsyncServer::begin()':
-.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:1721:14: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you mean 'u_addr'?
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.cpp:1721:14: error: 'ip_addr_t' {aka 'struct ip_addr'} has no member named 'addr'; did you mean 'u_addr'? 
    local_addr.addr = (uint32_t) _addr;
               ^~~~
               u_addr
-Compiling .pio\build\esp32dev\lib418\FS\FS.cpp.o
-*** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncPrinter.cpp.o] Error 1
+*** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W.cpp.o] Error 1
+In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W_buffer.h:60,
+                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W_buffer.cpp:58:
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
+   #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
+    ^~~~~
+In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.cpp:53:
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:73:4: error: #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
+   #error For RASPBERRY_PI_PICO_W board using CYW43439 WiFi only
+    ^~~~~
+In file included from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/lwip/src/include/lwip/opt.h:51,
+                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/lwip/src/include/lwip/ip_addr.h:40,
+                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/tcpip_adapter/include/tcpip_adapter_types.h:18,
+                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/tcpip_adapter/include/tcpip_adapter.h:24,
+                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_netif/include/esp_netif.h:35,
+                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_event/include/esp_event_legacy.h:22,
+                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_event/include/esp_event.h:28,
+                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiGeneric.h:27,
+                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiSTA.h:28,
+                 from C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFi.h:32,
+                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/AsyncTCP_RP2040W.h:84,
+                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.cpp:53:
+C:/Users/sasa/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/port/esp32/include/lwipopts.h:439: warning: "TCP_MSS" redefined
+ #define TCP_MSS                         CONFIG_LWIP_TCP_MSS
+
+In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:60,
+                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.cpp:52:
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35: note: this is the location of the previous definition
+   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
+
+In file included from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:60,
+                 from .pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.cpp:52:
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35:25: error: 'MBED_CONF_LWIP_TCP_MSS' was not declared in this scope
+   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
+                         ^~~~~~~~~~~~~~~~~~~~~~
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:86:34: note: in expansion of macro 'TCP_MSS'
+     SyncClient(size_t txBufLen = TCP_MSS);
+                                  ^~~~~~~
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35:25: note: suggested alternative: 'CONFIG_LWIP_TCP_MSS'
+   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
+                         ^~~~~~~~~~~~~~~~~~~~~~
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:86:34: note: in expansion of macro 'TCP_MSS'
+     SyncClient(size_t txBufLen = TCP_MSS);
+                                  ^~~~~~~
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35:25: error: 'MBED_CONF_LWIP_TCP_MSS' was not declared in this scope
+   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
+                         ^~~~~~~~~~~~~~~~~~~~~~
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:87:55: note: in expansion of macro 'TCP_MSS'
+     SyncClient(AsyncClient *client, size_t txBufLen = TCP_MSS);
+                                                       ^~~~~~~
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/async_config.h:35:25: note: suggested alternative: 'CONFIG_LWIP_TCP_MSS'
+   #define TCP_MSS       MBED_CONF_LWIP_TCP_MSS        //(1460)
+                         ^~~~~~~~~~~~~~~~~~~~~~
+.pio/libdeps/esp32dev/AsyncTCP_RP2040W/src/SyncClient.h:87:55: note: in expansion of macro 'TCP_MSS'
+     SyncClient(AsyncClient *client, size_t txBufLen = TCP_MSS);
+                                                       ^~~~~~~
 *** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W_buffer.cpp.o] Error 1
 *** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\SyncClient.cpp.o] Error 1
-*** [.pio\build\esp32dev\lib6e4\AsyncTCP_RP2040W\AsyncTCP_RP2040W.cpp.o] Error 1
-============================================================ [FAILED] Took 16.97 seconds ============
+==================================================================== [FAILED] Took 22.52 seconds ========================================
