@@ -1,47 +1,143 @@
 Компиляция скетча...
-"H:\\RADIO\\MK\\Progi\\FLProg\\downloads\\PortableFLProg_8-1-0_Win64\\ideV8\\portable\\packages\\esp32\\tools\\esp-x32\\2511/bin/xtensa-esp32-elf-g++" -MMD -c "@H:\\RADIO\\MK\\Progi\\FLProg\\downloads\\PortableFLProg_8-1-0_Win64\\ideV8\\portable\\packages\\esp32\\tools\\esp32-arduino-libs\\idf-release_v5.5-9bb7aa84-v2\\esp32/flags/cpp_flags" -Wall -Os -Werror=return-type -DF_CPU=240000000L -DARDUINO=10819 -DARDUINO_ESP32_WROOM_DA -DARDUINO_ARCH_ESP32 "-DARDUINO_BOARD=\"ESP32_WROOM_DA\"" "-DARDUINO_VARIANT=\"esp32da\"" -DARDUINO_PARTITION_default "-DARDUINO_HOST_OS=\"windows\"" "-DARDUINO_FQBN=\"esp32:esp32:esp32da:PartitionScheme=default,CPUFreq=240,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=921600,LoopCore=1,EventsCore=1,DebugLevel=none,EraseFlash=none\"" -DESP32=ESP32 -DCORE_DEBUG_LEVEL=0 -DARDUINO_RUNNING_CORE=1 -DARDUINO_EVENT_RUNNING_CORE=1 -DARDUINO_USB_CDC_ON_BOOT=0 "@H:\\RADIO\\MK\\Progi\\FLProg\\downloads\\PortableFLProg_8-1-0_Win64\\ideV8\\portable\\packages\\esp32\\tools\\esp32-arduino-libs\\idf-release_v5.5-9bb7aa84-v2\\esp32/flags/defines" "-IH:\\RADIO\\MK\\Proektis\\Proekt UmniyDom\\ПРОЕКТ UD23 УМНЫЙ ДОМ НА ESP С MQTT(Использовать 2 ядра раздельно)\\5 переход на ESP-NOW технологию\\Продолжение проекта №2\\sketch_jan18a" -iprefix "H:\\RADIO\\MK\\Progi\\FLProg\\downloads\\PortableFLProg_8-1-0_Win64\\ideV8\\portable\\packages\\esp32\\tools\\esp32-arduino-libs\\idf-release_v5.5-9bb7aa84-v2\\esp32/include/" "@H:\\RADIO\\MK\\Progi\\FLProg\\downloads\\PortableFLProg_8-1-0_Win64\\ideV8\\portable\\packages\\esp32\\tools\\esp32-arduino-libs\\idf-release_v5.5-9bb7aa84-v2\\esp32/flags/includes" "-IH:\\RADIO\\MK\\Progi\\FLProg\\downloads\\PortableFLProg_8-1-0_Win64\\ideV8\\portable\\packages\\esp32\\tools\\esp32-arduino-libs\\idf-release_v5.5-9bb7aa84-v2\\esp32/qio_qspi/include" "-IH:\\RADIO\\MK\\Progi\\FLProg\\downloads\\PortableFLProg_8-1-0_Win64\\ideV8\\portable\\packages\\esp32\\hardware\\esp32\\3.3.5\\cores\\esp32" "-IH:\\RADIO\\MK\\Progi\\FLProg\\downloads\\PortableFLProg_8-1-0_Win64\\ideV8\\portable\\packages\\esp32\\hardware\\esp32\\3.3.5\\variants\\esp32da" "-IH:\\RADIO\\MK\\Progi\\FLProg\\downloads\\PortableFLProg_8-1-0_Win64\\ideV8\\portable\\packages\\esp32\\hardware\\esp32\\3.3.5\\libraries\\WiFi\\src" "-IH:\\RADIO\\MK\\Progi\\FLProg\\downloads\\PortableFLProg_8-1-0_Win64\\ideV8\\portable\\packages\\esp32\\hardware\\esp32\\3.3.5\\libraries\\Network\\src" "-IH:\\RADIO\\MK\\Progi\\FLProg\\downloads\\PortableFLProg_8-1-0_Win64\\ideV8\\libraries\\ESPAsyncWebServer\\src" "-IH:\\RADIO\\MK\\Progi\\FLProg\\downloads\\PortableFLProg_8-1-0_Win64\\ideV8\\portable\\packages\\esp32\\hardware\\esp32\\3.3.5\\libraries\\FS\\src" "-IH:\\RADIO\\MK\\Progi\\FLProg\\downloads\\PortableFLProg_8-1-0_Win64\\ideV8\\libraries\\AsyncTCP\\src" "-IC:\\Users\\sasa\\Documents\\Arduino\\libraries\\ArduinoJson\\src" "-IH:\\RADIO\\MK\\Progi\\FLProg\\downloads\\PortableFLProg_8-1-0_Win64\\ideV8\\portable\\packages\\esp32\\hardware\\esp32\\3.3.5\\libraries\\Hash\\src" "@C:\\Users\\sasa\\AppData\\Local\\Temp\\arduino_build_723302/build_opt.h" "@C:\\Users\\sasa\\AppData\\Local\\Temp\\arduino_build_723302/file_opts" "C:\\Users\\sasa\\AppData\\Local\\Temp\\arduino_build_723302\\sketch\\sketch_jan18a.ino.cpp" -o "C:\\Users\\sasa\\AppData\\Local\\Temp\\arduino_build_723302\\sketch\\sketch_jan18a.ino.cpp.o"
-H:\RADIO\MK\Proektis\Proekt UmniyDom\ПРОЕКТ UD23 УМНЫЙ ДОМ НА ESP С MQTT(Использовать 2 ядра раздельно)\5 переход на ESP-NOW технологию\Продолжение проекта №2\sketch_jan18a\sketch_jan18a.ino: In function 'void onWebSocketEvent(AsyncWebSocket*, AsyncWebSocketClient*, AwsEventType, void*, uint8_t*, size_t)':
-sketch_jan18a:164:22: error: 'ArduinoJson::V6215PB2::JsonDocument::JsonDocument()' is protected within this context
-In file included from C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/BasicJsonDocument.hpp:7,
-                 from C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/DynamicJsonDocument.hpp:7,
-                 from C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson.hpp:33,
-                 from C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson.h:9,
-                 from H:\RADIO\MK\Proektis\Proekt UmniyDom\ПРОЕКТ UD23 УМНЫЙ ДОМ НА ESP С MQTT(Использовать 2 ядра раздельно)\5 переход на ESP-NOW технологию\Продолжение проекта №2\sketch_jan18a\sketch_jan18a.ino:17:
-C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:280:3: note: declared protected here
-  280 |   JsonDocument() : pool_(0, 0) {}
-      |   ^~~~~~~~~~~~
-sketch_jan18a:164:22: error: 'ArduinoJson::V6215PB2::JsonDocument::~JsonDocument()' is protected within this context
-C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:286:3: note: declared protected here
-  286 |   ~JsonDocument() {}
-      |   ^
-H:\RADIO\MK\Proektis\Proekt UmniyDom\ПРОЕКТ UD23 УМНЫЙ ДОМ НА ESP С MQTT(Использовать 2 ядра раздельно)\5 переход на ESP-NOW технологию\Продолжение проекта №2\sketch_jan18a\sketch_jan18a.ino: In function 'void broadcastStatus(String)':
-sketch_jan18a:222:18: error: 'ArduinoJson::V6215PB2::JsonDocument::JsonDocument()' is protected within this context
-C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:280:3: note: declared protected here
-  280 |   JsonDocument() : pool_(0, 0) {}
-      |   ^~~~~~~~~~~~
-sketch_jan18a:222:18: error: 'ArduinoJson::V6215PB2::JsonDocument::~JsonDocument()' is protected within this context
-C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson\src/ArduinoJson/Document/JsonDocument.hpp:286:3: note: declared protected here
-  286 |   ~JsonDocument() {}
-      |   ^
-Несколько библиотек найдено для "WiFi.h"
- Используется: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\hardware\esp32\3.3.5\libraries\WiFi
-Не используется: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\WiFi
-Несколько библиотек найдено для "ESPAsyncWebServer.h"
- Используется: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\ESPAsyncWebServer
-Не используется: C:\Users\sasa\Documents\Arduino\libraries\ESP_Async_WebServer
-Несколько библиотек найдено для "AsyncTCP.h"
- Используется: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\AsyncTCP
-Не используется: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\Async_TCP
-Не используется: C:\Users\sasa\Documents\Arduino\libraries\Async_TCP
-Несколько библиотек найдено для "ArduinoJson.h"
- Используется: C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson
-Не используется: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\ArduinoJson
-Используем библиотеку WiFi версии 3.3.5 из папки: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\hardware\esp32\3.3.5\libraries\WiFi 
-Используем библиотеку Network версии 3.3.5 из папки: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\hardware\esp32\3.3.5\libraries\Network 
-Используем библиотеку ESPAsyncWebServer версии 3.6.0 из папки: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\ESPAsyncWebServer 
-Используем библиотеку FS версии 3.3.5 из папки: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\hardware\esp32\3.3.5\libraries\FS 
-Используем библиотеку AsyncTCP версии 3.3.2 из папки: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\libraries\AsyncTCP 
+"C:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp-x32\\2511/bin/xtensa-esp32-elf-g++" -MMD -c "@C:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-libs\\3.3.6/flags/cpp_flags" -Os -Werror=return-type -DF_CPU=240000000L -DARDUINO=10607 -DARDUINO_ESP32_WROOM_DA -DARDUINO_ARCH_ESP32 "-DARDUINO_BOARD=\"ESP32_WROOM_DA\"" "-DARDUINO_VARIANT=\"esp32da\"" -DARDUINO_PARTITION_default "-DARDUINO_HOST_OS=\"windows\"" "-DARDUINO_FQBN=\"esp32:esp32:esp32da:UploadSpeed=921600,CPUFreq=240,FlashFreq=80,FlashMode=qio,FlashSize=4M,PartitionScheme=default,DebugLevel=none,LoopCore=1,EventsCore=1,EraseFlash=none\"" -DESP32=ESP32 -DCORE_DEBUG_LEVEL=0 -DARDUINO_RUNNING_CORE=1 -DARDUINO_EVENT_RUNNING_CORE=1 -DARDUINO_USB_CDC_ON_BOOT=0 "@C:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-libs\\3.3.6/flags/defines" "-IC:\\Users\\sasa\\AppData\\Local\\Temp\\.arduinoIDE-unsaved202612-1168-llukch.35ft\\sketch_feb2a" -iprefix "C:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-libs\\3.3.6/include/" "@C:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-libs\\3.3.6/flags/includes" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-libs\\3.3.6/qio_qspi/include" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.6\\cores\\esp32" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.6\\variants\\esp32da" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.6\\libraries\\WiFi\\src" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.6\\libraries\\Network\\src" "-Ic:\\Users\\sasa\\Documents\\Arduino\\libraries\\ESP_Async_WebServer" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.6\\libraries\\FS\\src" "-Ic:\\Users\\sasa\\Documents\\Arduino\\libraries\\Async_TCP" "-Ic:\\Users\\sasa\\Documents\\Arduino\\libraries\\ArduinoJson\\src" "-IC:\\Users\\sasa\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.6\\libraries\\Hash\\src" "@C:\\Users\\sasa\\AppData\\Local\\arduino\\sketches\\339F629B13C3EABCD475146C2D1A3454/build_opt.h" "@C:\\Users\\sasa\\AppData\\Local\\arduino\\sketches\\339F629B13C3EABCD475146C2D1A3454/file_opts" "C:\\Users\\sasa\\AppData\\Local\\arduino\\sketches\\339F629B13C3EABCD475146C2D1A3454\\sketch\\sketch_feb2a.ino.cpp" -o "C:\\Users\\sasa\\AppData\\Local\\arduino\\sketches\\339F629B13C3EABCD475146C2D1A3454\\sketch\\sketch_feb2a.ino.cpp.o"
+C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved202612-1168-llukch.35ft\sketch_feb2a\sketch_feb2a.ino: In function 'void setup()':
+C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved202612-1168-llukch.35ft\sketch_feb2a\sketch_feb2a.ino:71:33: error: 'AsyncWebSocketRequest' has not been declared
+   71 |     server.on("/", HTTP_GET, [](AsyncWebSocketRequest *request) {
+      |                                 ^~~~~~~~~~~~~~~~~~~~~
+C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved202612-1168-llukch.35ft\sketch_feb2a\sketch_feb2a.ino: In lambda function:
+C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved202612-1168-llukch.35ft\sketch_feb2a\sketch_feb2a.ino:121:18: error: request for member 'send' in '* request', which is of non-class type 'int'
+  121 |         request->send(200, "text/html", html);
+      |                  ^~~~
+C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved202612-1168-llukch.35ft\sketch_feb2a\sketch_feb2a.ino: In function 'void setup()':
+C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved202612-1168-llukch.35ft\sketch_feb2a\sketch_feb2a.ino:71:14: error: no matching function for call to 'AsyncWebServer::on(const char [2], WebRequestMethod, setup()::<lambda(int*)>)'
+   71 |     server.on("/", HTTP_GET, [](AsyncWebSocketRequest *request) {
+      |     ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   72 |         String html = R"rawliteral(
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   73 |         <!DOCTYPE html>
+      |         ~~~~~~~~~~~~~~~
+   74 |         <html>
+      |         ~~~~~~
+   75 |         <head>
+      |         ~~~~~~
+   76 |             <meta charset="UTF-8">
+      |             ~~~~~~~~~~~~~~~~~~~~~~
+   77 |             <meta name="viewport" content="width=device-width, initial-scale=1">
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   78 |             <title>Тест ESP-NOW Хаб</title>
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   79 |             <style>
+      |             ~~~~~~~
+   80 |                 body {font-family: Arial; text-align: center; margin-top: 50px;}
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   81 |                 button {font-size: 20px; padding: 15px 30px; margin: 10px; border: none; border-radius: 8px; cursor: pointer;}
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   82 |                 #btnOn {background: #4CAF50; color: white;}
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   83 |                 #btnOff {background: #f44336; color: white;}
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   84 |                 #status {margin-top: 30px; font-size: 22px; padding: 15px; background: #f5f5f5; border-radius: 8px;}
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   85 |                 .on {color: #4CAF50; font-weight: bold;}
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   86 |                 .off {color: #f44336; font-weight: bold;}
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   87 |             </style>
+      |             ~~~~~~~~
+   88 |         </head>
+      |         ~~~~~~~
+   89 |         <body>
+      |         ~~~~~~
+   90 |             <h1>ESP-NOW Тест: Управление удалённым узлом</h1>
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   91 |             <p>MAC узла: AC:EB:E6:49:10:28</p>
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   92 |             <button id="btnOn" onclick="sendCommand('LED_ON')">▶ ВКЛЮЧИТЬ LED</button>
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   93 |             <button id="btnOff" onclick="sendCommand('LED_OFF')">⏸ ВЫКЛЮЧИТЬ LED</button>
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   94 |             <div id="status">Статус: Ожидание подключения...</div>
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   95 |             <script>
+      |             ~~~~~~~~
+   96 |                 const ws = new WebSocket('ws://' + window.location.hostname + '/ws');
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   97 |                 ws.onopen = function() {
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~
+   98 |                     document.getElementById('status').innerHTML = 'Статус: <span class="on">Подключён к хабу</span>';
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   99 |                 };
+      |                 ~~
+  100 |                 ws.onmessage = function(event) {
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  101 |                     const msg = JSON.parse(event.data);
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  102 |                     if(msg.type === 'status') {
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  103 |                         const statusElem = document.getElementById('status');
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  104 |                         statusElem.innerHTML = 'Статус узла: <span class="' + msg.state + '">' + msg.text + '</span>';
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  105 |                         if(msg.state === 'on') {
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~
+  106 |                             document.getElementById('btnOn').style.opacity = '0.6';
+      |                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  107 |                             document.getElementById('btnOff').style.opacity = '1';
+      |                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  108 |                         } else {
+      |                         ~~~~~~~~
+  109 |                             document.getElementById('btnOn').style.opacity = '1';
+      |                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  110 |                             document.getElementById('btnOff').style.opacity = '0.6';
+      |                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  111 |                         }
+      |                         ~
+  112 |                     }
+      |                     ~
+  113 |                 };
+      |                 ~~
+  114 |                 function sendCommand(cmd) {
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  115 |                     ws.send(JSON.stringify({command: cmd}));
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  116 |                 }
+      |                 ~
+  117 |             </script>
+      |             ~~~~~~~~~
+  118 |         </body>
+      |         ~~~~~~~
+  119 |         </html>
+      |         ~~~~~~~
+  120 |         )rawliteral";
+      |         ~~~~~~~~~~~~~
+  121 |         request->send(200, "text/html", html);
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  122 |     });
+      |     ~~        
+In file included from C:\Users\sasa\AppData\Local\Temp\.arduinoIDE-unsaved202612-1168-llukch.35ft\sketch_feb2a\sketch_feb2a.ino:14:
+c:\Users\sasa\Documents\Arduino\libraries\ESP_Async_WebServer/ESPAsyncWebServer.h:1531:28: note: candidate: 'AsyncCallbackWebHandler& AsyncWebServer::on(AsyncURIMatcher, ArRequestHandlerFunction)'
+ 1531 |   AsyncCallbackWebHandler &on(AsyncURIMatcher uri, ArRequestHandlerFunction onRequest) {
+      |                            ^~
+c:\Users\sasa\Documents\Arduino\libraries\ESP_Async_WebServer/ESPAsyncWebServer.h:1531:28: note:   candidate expects 2 arguments, 3 provided
+c:\Users\sasa\Documents\Arduino\libraries\ESP_Async_WebServer/ESPAsyncWebServer.h:1534:28: note: candidate: 'AsyncCallbackWebHandler& AsyncWebServer::on(AsyncURIMatcher, WebRequestMethodComposite, ArRequestHandlerFunction, ArUploadHandlerFunction, ArBodyHandlerFunction)'
+ 1534 |   AsyncCallbackWebHandler &on(
+      |                            ^~
+c:\Users\sasa\Documents\Arduino\libraries\ESP_Async_WebServer/ESPAsyncWebServer.h:1535:85: note:   no known conversion for argument 3 from 'setup()::<lambda(int*)>' to 'ArRequestHandlerFunction' {aka 'std::function<void(AsyncWebServerRequest*)>'}
+ 1535 |     AsyncURIMatcher uri, WebRequestMethodComposite method, ArRequestHandlerFunction onRequest, ArUploadHandlerFunction onUpload = nullptr,
+      |                                                            ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~
+c:\Users\sasa\Documents\Arduino\libraries\ESP_Async_WebServer/ESPAsyncWebServer.h:1540:32: note: candidate: 'AsyncCallbackJsonWebHandler& AsyncWebServer::on(AsyncURIMatcher, WebRequestMethodComposite, ArJsonRequestHandlerFunction)'
+ 1540 |   AsyncCallbackJsonWebHandler &on(AsyncURIMatcher uri, WebRequestMethodComposite method, ArJsonRequestHandlerFunction onBody);
+      |                                ^~
+c:\Users\sasa\Documents\Arduino\libraries\ESP_Async_WebServer/ESPAsyncWebServer.h:1540:119: note:   no known conversion for argument 3 from 'setup()::<lambda(int*)>' to 'ArJsonRequestHandlerFunction' {aka 'std::function<void(AsyncWebServerRequest*, ArduinoJson::V6215PB2::JsonVariant&)>'}
+ 1540 |   AsyncCallbackJsonWebHandler &on(AsyncURIMatcher uri, WebRequestMethodComposite method, ArJsonRequestHandlerFunction onBody);
+      |                                                                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+Используем библиотеку WiFi версии 3.3.6 из папки: C:\Users\sasa\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.6\libraries\WiFi 
+Используем библиотеку Networking версии 3.3.6 из папки: C:\Users\sasa\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.6\libraries\Network 
+Используем библиотеку ESP Async WebServer версии 3.9.4 из папки: C:\Users\sasa\Documents\Arduino\libraries\ESP_Async_WebServer 
+Используем библиотеку FS версии 3.3.6 из папки: C:\Users\sasa\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.6\libraries\FS 
+Используем библиотеку Async TCP версии 3.4.10 из папки: C:\Users\sasa\Documents\Arduino\libraries\Async_TCP 
 Используем библиотеку ArduinoJson версии 6.21.5 из папки: C:\Users\sasa\Documents\Arduino\libraries\ArduinoJson 
-Используем библиотеку Hash версии 3.3.5 из папки: H:\RADIO\MK\Progi\FLProg\downloads\PortableFLProg_8-1-0_Win64\ideV8\portable\packages\esp32\hardware\esp32\3.3.5\libraries\Hash 
+Используем библиотеку Hash версии 3.3.6 из папки: C:\Users\sasa\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.6\libraries\Hash 
 exit status 1
-'ArduinoJson::V6215PB2::JsonDocument::JsonDocument()' is protected within this context
+
+Compilation error: 'AsyncWebSocketRequest' has not been declared
