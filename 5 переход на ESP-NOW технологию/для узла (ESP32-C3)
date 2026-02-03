@@ -1,0 +1,88 @@
+#include <WiFi.h>
+#include <esp_now.h>
+
+#define NODE_ID 101
+#define LED_PIN 8
+
+typedef struct esp_now_message {
+    char command[16]; // "LED_ON", "LED_OFF", "ACK_ON", "ACK_OFF"
+    uint8_t sender_id;
+} esp_now_message;
+
+esp_now_message incomingMessage;
+esp_now_message outgoingMessage;
+
+// ЗАМЕНИТЕ ЭТОТ МАК-АДРЕС НА РЕАЛЬНЫЙ АДРЕС ВАШЕГО ХАБА (ESP32)!
+uint8_t hubMacAddress[] = {0x9C, 0x9C, 0x1F, 0xC7, 0x2D, 0x94};
+
+void onEspNowDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len);
+void onEspNowDataSent(const esp_now_send_info_t *send_info, esp_now_send_status_t status);
+void sendAckToHub(const char* ackCommand);
+
+void setup() {
+    Serial.begin(115200);
+    delay(5000);
+    Serial.println("\n=== ESP-NOW NODE ===");
+
+    pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, HIGH);
+    Serial.print("Node MAC: ");
+    Serial.println(WiFi.macAddress());
+
+    WiFi.mode(WIFI_STA);
+    WiFi.setTxPower(WIFI_POWER_8_5dBm);
+
+    if (esp_now_init() != ESP_OK) {
+        Serial.println("ESP-NOW Init Failed");
+        while(1);
+    }
+    esp_now_register_recv_cb(onEspNowDataRecv);
+    esp_now_register_send_cb(onEspNowDataSent);
+
+    esp_now_peer_info_t peerInfo = {};
+    memcpy(peerInfo.peer_addr, hubMacAddress, 6);
+    peerInfo.channel = 0;
+    peerInfo.encrypt = false;
+    esp_now_add_peer(&peerInfo);
+    Serial.println("Node ready.");
+}
+
+void loop() { delay(1000); }
+
+void onEspNowDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingData, int len) {
+    const uint8_t *senderMac = recv_info->src_addr;
+    memcpy(&incomingMessage, incomingData, sizeof(incomingMessage));
+    Serial.print("Cmd from hub ");
+    for(int i=0; i<6; i++) {
+        Serial.print(senderMac[i], HEX);
+        if(i < 5) Serial.print(":");
+    }
+    Serial.print(": ");
+    Serial.println(incomingMessage.command);
+
+    if(strcmp(incomingMessage.command, "LED_ON") == 0) {
+        digitalWrite(LED_PIN, LOW);
+        Serial.println("LED ON.");
+        sendAckToHub("ACK_ON");
+    } else if(strcmp(incomingMessage.command, "LED_OFF") == 0) {
+        digitalWrite(LED_PIN, HIGH);
+        Serial.println("LED OFF.");
+        sendAckToHub("ACK_OFF");
+    }
+}
+
+void sendAckToHub(const char* ackCommand) {
+    strncpy(outgoingMessage.command, ackCommand, sizeof(outgoingMessage.command)-1);
+    outgoingMessage.sender_id = NODE_ID;
+    esp_err_t result = esp_now_send(hubMacAddress, (uint8_t *) &outgoingMessage, sizeof(outgoingMessage));
+    Serial.print("Send ack ");
+    Serial.print(ackCommand);
+    Serial.print(": ");
+    Serial.println(result == ESP_OK ? "OK" : "ERROR");
+}
+
+void onEspNowDataSent(const esp_now_send_info_t *send_info, esp_now_send_status_t status) {
+    if(status != ESP_NOW_SEND_SUCCESS) {
+        Serial.println("Ack delivery failed.");
+    }
+}
